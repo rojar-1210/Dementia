@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "scheme": "memorycare",
     "userInterfaceStyle": "light",
+    "platforms": ["ios", "android", "web"],
     "splash": {
       "backgroundColor": "#4A90D9"
     },
