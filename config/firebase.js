@@ -2,14 +2,14 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Replace with your Firebase project config from Firebase Console
 const firebaseConfig = {
-  apiKey: "<YOUR_API_KEY>",
-  authDomain: "<YOUR_AUTH_DOMAIN>",
-  projectId: "<YOUR_PROJECT_ID>",
-  storageBucket: "<YOUR_STORAGE_BUCKET>",
-  messagingSenderId: "<YOUR_MESSAGING_SENDER_ID>",
-  appId: "<YOUR_APP_ID>",
+  apiKey: "AIzaSyCod6G5jKHMkNV3XyEPKvaEUcYpb227-zg",
+  authDomain: "dementia-a06cd.firebaseapp.com",
+  projectId: "dementia-a06cd",
+  storageBucket: "dementia-a06cd.firebasestorage.app",
+  messagingSenderId: "85788968871",
+  appId: "1:85788968871:web:694070eb4ede4fe5435882",
+  measurementId: "G-JEZ8L03Y0J",
 };
 
 const app = initializeApp(firebaseConfig);
