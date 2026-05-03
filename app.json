@@ -4,12 +4,9 @@
     "slug": "memory-care-assistant",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "scheme": "memorycare",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
       "backgroundColor": "#4A90D9"
     },
     "plugins": [
@@ -18,7 +15,6 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
           "color": "#4A90D9"
         }
       ],
@@ -27,13 +23,10 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Memory Care to use your location for safety tracking."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#4A90D9"
-      },
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
