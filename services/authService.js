@@ -5,7 +5,8 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithCredential,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Platform } from 'react-native';
@@ -46,10 +47,14 @@ export const signInWithGoogle = async (role = 'patient') => {
   provider.addScope('email');
   provider.addScope('profile');
 
-  const result = await signInWithPopup(auth, provider);
-  const user = result.user;
+  // Use redirect (works without authorized domain on Vercel)
+  await signInWithRedirect(auth, provider);
+};
 
-  // Check if profile exists, if not create one
+export const handleGoogleRedirectResult = async (role = 'patient') => {
+  const result = await getRedirectResult(auth);
+  if (!result) return null;
+  const user = result.user;
   const snap = await getDoc(doc(db, 'users', user.uid));
   if (!snap.exists()) {
     await setDoc(doc(db, 'users', user.uid), {

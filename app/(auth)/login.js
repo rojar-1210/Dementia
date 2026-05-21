@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { signIn, signInWithGoogle, getUserProfile } from '../../services/authService';
+import { signIn, signInWithGoogle, handleGoogleRedirectResult, getUserProfile } from '../../services/authService';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants/theme';
 
 export default function LoginScreen() {
@@ -15,6 +15,22 @@ export default function LoginScreen() {
     if (profile?.role === 'caregiver') router.replace('/(caregiver)/dashboard');
     else router.replace('/(patient)/dashboard');
   };
+
+  // Handle Google redirect result when page loads after redirect
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        setGoogleLoading(true);
+        const result = await handleGoogleRedirectResult();
+        if (result) redirect(result.profile);
+      } catch (e) {
+        // No redirect result, ignore
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+    checkRedirect();
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) return Alert.alert('Error', 'Please fill all fields');
@@ -31,16 +47,24 @@ export default function LoginScreen() {
   };
 
   const handleGoogle = async () => {
-    setGoogleLoading(true);
     try {
-      const { profile } = await signInWithGoogle();
-      redirect(profile);
+      // Saves role to localStorage before redirect so we can use it after
+      if (typeof localStorage !== 'undefined') localStorage.setItem('googleRole', 'patient');
+      await signInWithGoogle('patient');
+      // Page will redirect to Google, then come back
     } catch (e) {
       Alert.alert('Google Login Failed', e.message);
-    } finally {
-      setGoogleLoading(false);
     }
   };
+
+  if (googleLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Signing in with Google...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -57,22 +81,15 @@ export default function LoginScreen() {
         {loading ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.btnText}>Login</Text>}
       </TouchableOpacity>
 
-      {/* Divider */}
       <View style={styles.dividerRow}>
         <View style={styles.dividerLine} />
         <Text style={styles.dividerText}>OR</Text>
         <View style={styles.dividerLine} />
       </View>
 
-      {/* Google Button */}
-      <TouchableOpacity style={styles.googleBtn} onPress={handleGoogle} disabled={googleLoading}>
-        {googleLoading
-          ? <ActivityIndicator color={COLORS.text} />
-          : <>
-              <Text style={styles.googleIcon}>G</Text>
-              <Text style={styles.googleText}>Continue with Google</Text>
-            </>
-        }
+      <TouchableOpacity style={styles.googleBtn} onPress={handleGoogle}>
+        <Text style={styles.googleIcon}>G</Text>
+        <Text style={styles.googleText}>Continue with Google</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.push('/(auth)/signup')} style={{ marginTop: SPACING.md }}>
@@ -84,6 +101,8 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', padding: SPACING.lg },
+  loadingContainer: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', gap: SPACING.md },
+  loadingText: { fontSize: FONTS.medium, color: COLORS.subtext },
   emoji: { fontSize: 72, marginBottom: SPACING.sm },
   title: { fontSize: FONTS.xlarge, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },
   subtitle: { fontSize: FONTS.medium, color: COLORS.subtext, marginBottom: SPACING.xl },

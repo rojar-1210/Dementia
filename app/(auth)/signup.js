@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { signUp, signInWithGoogle } from '../../services/authService';
+import { signUp, signInWithGoogle, handleGoogleRedirectResult } from '../../services/authService';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants/theme';
 
 export default function SignupScreen() {
@@ -20,6 +20,26 @@ export default function SignupScreen() {
     else router.replace('/(patient)/dashboard');
   };
 
+  // Handle Google redirect result when page loads after redirect
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        setGoogleLoading(true);
+        const savedRole = typeof localStorage !== 'undefined' ? localStorage.getItem('googleRole') || 'patient' : 'patient';
+        const result = await handleGoogleRedirectResult(savedRole);
+        if (result) {
+          if (typeof localStorage !== 'undefined') localStorage.removeItem('googleRole');
+          redirect(result.profile?.role || savedRole);
+        }
+      } catch (e) {
+        // No redirect result, ignore
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+    checkRedirect();
+  }, []);
+
   const handleSignup = async () => {
     if (!name || !email || !password) return Alert.alert('Error', 'Please fill all fields');
     setLoading(true);
@@ -33,23 +53,25 @@ export default function SignupScreen() {
     }
   };
 
-  const handleGoogleSignup = async () => {
-    // Show role selection modal first
-    setGoogleRoleModal(true);
-  };
-
   const confirmGoogleSignup = async () => {
     setGoogleRoleModal(false);
-    setGoogleLoading(true);
     try {
-      const { profile } = await signInWithGoogle(googleRole);
-      redirect(profile?.role || googleRole);
+      if (typeof localStorage !== 'undefined') localStorage.setItem('googleRole', googleRole);
+      await signInWithGoogle(googleRole);
+      // Page redirects to Google then comes back
     } catch (e) {
       Alert.alert('Google Signup Failed', e.message);
-    } finally {
-      setGoogleLoading(false);
     }
   };
+
+  if (googleLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Setting up your account...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -62,7 +84,7 @@ export default function SignupScreen() {
 
       <Text style={styles.label}>I am a:</Text>
       <View style={styles.roleRow}>
-        {[{ key: 'patient', label: '🧓 Patient' }, { key: 'caregiver', label: '👨‍⚕️ Caregiver' }].map(r => (
+        {[{ key: 'patient', label: '🧓 Patient' }, { key: 'caregiver', label: '👨⚕️ Caregiver' }].map(r => (
           <TouchableOpacity key={r.key} style={[styles.roleBtn, role === r.key && styles.roleBtnActive]} onPress={() => setRole(r.key)}>
             <Text style={[styles.roleText, role === r.key && styles.roleTextActive]}>{r.label}</Text>
           </TouchableOpacity>
@@ -73,22 +95,15 @@ export default function SignupScreen() {
         {loading ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.btnText}>Sign Up</Text>}
       </TouchableOpacity>
 
-      {/* Divider */}
       <View style={styles.dividerRow}>
         <View style={styles.dividerLine} />
         <Text style={styles.dividerText}>OR</Text>
         <View style={styles.dividerLine} />
       </View>
 
-      {/* Google Button */}
-      <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleSignup} disabled={googleLoading}>
-        {googleLoading
-          ? <ActivityIndicator color={COLORS.text} />
-          : <>
-              <Text style={styles.googleIcon}>G</Text>
-              <Text style={styles.googleText}>Sign up with Google</Text>
-            </>
-        }
+      <TouchableOpacity style={styles.googleBtn} onPress={() => setGoogleRoleModal(true)}>
+        <Text style={styles.googleIcon}>G</Text>
+        <Text style={styles.googleText}>Sign up with Google</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.back()} style={{ marginTop: SPACING.md }}>
@@ -102,7 +117,7 @@ export default function SignupScreen() {
             <Text style={styles.modalTitle}>Select Your Role</Text>
             <Text style={styles.modalSubtitle}>How will you use Memory Care?</Text>
             <View style={styles.roleRow}>
-              {[{ key: 'patient', label: '🧓 Patient' }, { key: 'caregiver', label: '👨‍⚕️ Caregiver' }].map(r => (
+              {[{ key: 'patient', label: '🧓 Patient' }, { key: 'caregiver', label: '👨⚕️ Caregiver' }].map(r => (
                 <TouchableOpacity key={r.key} style={[styles.roleBtn, googleRole === r.key && styles.roleBtnActive]} onPress={() => setGoogleRole(r.key)}>
                   <Text style={[styles.roleText, googleRole === r.key && styles.roleTextActive]}>{r.label}</Text>
                 </TouchableOpacity>
@@ -125,6 +140,8 @@ export default function SignupScreen() {
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', padding: SPACING.lg },
+  loadingContainer: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', gap: SPACING.md },
+  loadingText: { fontSize: FONTS.medium, color: COLORS.subtext },
   emoji: { fontSize: 64, marginBottom: SPACING.sm },
   title: { fontSize: FONTS.xlarge, fontWeight: 'bold', color: COLORS.text, marginBottom: SPACING.xl },
   input: { width: '100%', backgroundColor: COLORS.card, borderRadius: RADIUS.md, padding: SPACING.md, fontSize: FONTS.medium, color: COLORS.text, marginBottom: SPACING.md, borderWidth: 1, borderColor: COLORS.border },
