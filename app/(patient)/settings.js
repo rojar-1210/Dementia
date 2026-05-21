@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import { logOut } from '../../services/authService';
-import { FONTS, SPACING, RADIUS } from '../../constants/theme';
+import { COLORS, FONTS, SPACING, RADIUS } from '../../constants/theme';
 
 export default function PatientSettings() {
   const { profile } = useAuth();

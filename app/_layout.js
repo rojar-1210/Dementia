@@ -1,14 +1,12 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '../hooks/useAuth';
-import { ThemeProvider, useTheme } from '../hooks/useTheme';
+import { ThemeProvider } from '../hooks/useTheme';
 import { useFonts } from 'expo-font';
-import { View, Text } from 'react-native';
 import { COLORS } from '../constants/theme';
 
 function RootNavigator() {
   const { user, profile, loading } = useAuth();
-  const { fontFamily } = useTheme();
   const router = useRouter();
   const segments = useSegments();
 
@@ -17,22 +15,16 @@ function RootNavigator() {
     'PlayfairDisplay-Bold': require('../assets/fonts/PlayfairDisplay-Bold.ttf'),
   });
 
-  if (!fontsLoaded) return null;
-
   useEffect(() => {
     if (loading) return;
     const inAuth = segments[0] === '(auth)';
     const inPatient = segments[0] === '(patient)';
     const inCaregiver = segments[0] === '(caregiver)';
-
     if (!user) {
       if (!inAuth) router.replace('/(auth)/login');
     } else if (user && profile) {
-      if (profile.role === 'caregiver' && !inCaregiver) {
-        router.replace('/(caregiver)/dashboard');
-      } else if (profile.role === 'patient' && !inPatient) {
-        router.replace('/(patient)/dashboard');
-      }
+      if (profile.role === 'caregiver' && !inCaregiver) router.replace('/(caregiver)/dashboard');
+      else if (profile.role === 'patient' && !inPatient) router.replace('/(patient)/dashboard');
     }
   }, [user, profile, loading]);
 
