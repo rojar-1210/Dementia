@@ -9,10 +9,9 @@ import { FONTS, SPACING, RADIUS } from '../../constants/theme';
 
 export default function PatientSettings() {
   const { profile } = useAuth();
-  const { darkMode, toggleDarkMode, colors } = useTheme();
+  const { darkMode, toggleDarkMode, colors, fontSize, changeFontSize } = useTheme();
   const router = useRouter();
   const [voiceOn, setVoiceOn] = useState(true);
-  const [fontSize, setFontSize] = useState('Large');
   const [contactModal, setContactModal] = useState(false);
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
@@ -55,7 +54,7 @@ export default function PatientSettings() {
         <SettingRow icon="text" label="Font Size" right={
           <View style={styles.fontRow}>
             {['Small', 'Large', 'XLarge'].map(s => (
-              <TouchableOpacity key={s} style={[styles.fontBtn, { borderColor: C.border }, fontSize === s && { borderColor: C.primary, backgroundColor: '#EAF2FF' }]} onPress={() => setFontSize(s)}>
+              <TouchableOpacity key={s} style={[styles.fontBtn, { borderColor: C.border }, fontSize === s && { borderColor: C.primary, backgroundColor: '#EAF2FF' }]} onPress={() => changeFontSize(s)}>
                 <Text style={[styles.fontBtnText, { color: fontSize === s ? C.primary : C.subtext }]}>{s}</Text>
               </TouchableOpacity>
             ))}

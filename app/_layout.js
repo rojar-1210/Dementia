@@ -2,12 +2,17 @@ import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '../hooks/useAuth';
 import { ThemeProvider } from '../hooks/useTheme';
+import { useFonts } from 'expo-font';
 import { COLORS } from '../constants/theme';
 
 function RootNavigator() {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
+
+  const [fontsLoaded] = useFonts({
+    'Apertura': require('../assets/fonts/Apertura.ttf'),
+  });
 
   useEffect(() => {
     if (loading) return;
