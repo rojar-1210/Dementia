@@ -25,21 +25,14 @@ export default function SignupScreen() {
   const [googleRole, setGoogleRole] = useState('patient');
   const [focused, setFocused] = useState('');
 
-  const redirect = (r) => {
-    if (r === 'caregiver') router.replace('/(caregiver)/dashboard');
-    else router.replace('/(patient)/dashboard');
-  };
-
   useEffect(() => {
+    // Handle redirect result — _layout.js will auto-route via onAuthStateChanged
     const checkRedirect = async () => {
       try {
         setGoogleLoading(true);
         const savedRole = typeof localStorage !== 'undefined' ? localStorage.getItem('googleRole') || 'patient' : 'patient';
-        const result = await handleGoogleRedirectResult(savedRole);
-        if (result) {
-          if (typeof localStorage !== 'undefined') localStorage.removeItem('googleRole');
-          redirect(result.profile?.role || savedRole);
-        }
+        await handleGoogleRedirectResult(savedRole);
+        if (typeof localStorage !== 'undefined') localStorage.removeItem('googleRole');
       } catch (e) {}
       finally { setGoogleLoading(false); }
     };
@@ -51,7 +44,7 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await signUp(email, password, name, role);
-      redirect(role);
+      // _layout.js handles routing via onAuthStateChanged
     } catch (e) {
       Alert.alert('Signup Failed', e.message);
     } finally { setLoading(false); }
@@ -61,7 +54,9 @@ export default function SignupScreen() {
     setGoogleRoleModal(false);
     try {
       if (typeof localStorage !== 'undefined') localStorage.setItem('googleRole', googleRole);
-      await signInWithGoogle(googleRole);
+      const result = await signInWithGoogle(googleRole);
+      // If popup succeeded result is returned, _layout.js handles routing
+      // If redirect was used, page reloads and _layout.js handles routing
     } catch (e) { Alert.alert('Google Signup Failed', e.message); }
   };
 

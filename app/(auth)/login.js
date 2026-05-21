@@ -27,36 +27,29 @@ export default function LoginScreen() {
     else router.replace('/(patient)/dashboard');
   };
 
+  const handleGoogle = async () => {
+    try {
+      const result = await signInWithGoogle('patient');
+      // If popup succeeded, result is returned — layout will auto-route via onAuthStateChanged
+      // If redirect was used, page will reload and layout will handle routing
+    } catch (e) {
+      Alert.alert('Google Login Failed', e.message);
+    }
+  };
+
+  // No need to check redirect result here — useAuth + _layout handles routing automatically
   useEffect(() => {
     const checkRedirect = async () => {
       try {
         setGoogleLoading(true);
-        const result = await handleGoogleRedirectResult();
-        if (result) redirect(result.profile);
+        const savedRole = typeof localStorage !== 'undefined' ? localStorage.getItem('googleRole') || 'patient' : 'patient';
+        await handleGoogleRedirectResult(savedRole);
+        // Routing handled by _layout.js via onAuthStateChanged
       } catch (e) {}
       finally { setGoogleLoading(false); }
     };
     checkRedirect();
   }, []);
-
-  const handleLogin = async () => {
-    if (!email || !password) return Alert.alert('Error', 'Please fill all fields');
-    setLoading(true);
-    try {
-      const user = await signIn(email, password);
-      const profile = await getUserProfile(user.uid);
-      redirect(profile);
-    } catch (e) {
-      Alert.alert('Login Failed', e.message);
-    } finally { setLoading(false); }
-  };
-
-  const handleGoogle = async () => {
-    try {
-      if (typeof localStorage !== 'undefined') localStorage.setItem('googleRole', 'patient');
-      await signInWithGoogle('patient');
-    } catch (e) { Alert.alert('Google Login Failed', e.message); }
-  };
 
   if (googleLoading) return (
     <View style={s.page}>

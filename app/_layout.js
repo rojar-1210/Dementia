@@ -11,18 +11,23 @@ function RootNavigator() {
 
   useEffect(() => {
     if (loading) return;
-    const inAuth = segments[0] === '(auth)';
-    const inRole = segments[0] === 'role-select';
 
-    if (!user && !inAuth) {
-      router.replace('/(auth)/login');
-    } else if (user && !profile && !inRole && !inAuth) {
-      router.replace('/role-select');
-    } else if (user && profile?.role === 'patient' && !segments[0]?.includes('patient') && !inAuth) {
-      router.replace('/(patient)/dashboard');
-    } else if (user && profile?.role === 'caregiver' && !segments[0]?.includes('caregiver') && !inAuth) {
-      router.replace('/(caregiver)/dashboard');
+    const inAuth = segments[0] === '(auth)';
+    const inPatient = segments[0] === '(patient)';
+    const inCaregiver = segments[0] === '(caregiver)';
+
+    if (!user) {
+      // Not logged in → go to login
+      if (!inAuth) router.replace('/(auth)/login');
+    } else if (user && profile) {
+      // Logged in with profile → route to correct dashboard
+      if (profile.role === 'caregiver' && !inCaregiver) {
+        router.replace('/(caregiver)/dashboard');
+      } else if (profile.role === 'patient' && !inPatient) {
+        router.replace('/(patient)/dashboard');
+      }
     }
+    // If user exists but no profile yet, wait for profile to load
   }, [user, profile, loading]);
 
   if (loading) {
@@ -36,7 +41,6 @@ function RootNavigator() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="role-select" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(patient)" />
       <Stack.Screen name="(caregiver)" />
