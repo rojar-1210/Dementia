@@ -95,9 +95,21 @@ export default function PatientsScreen() {
               <Text style={styles.itemTitle}>{item.title}</Text>
               <Text style={styles.itemSub}>{tab === 'Reminders' ? item.time : `${item.date} • ${item.doctor}`}</Text>
             </View>
-            <TouchableOpacity onPress={async () => {
-              if (tab === 'Reminders') { await deletePatientReminder(item.id); getPatientReminders(selected.uid).then(setReminders); }
-              else { await deletePatientAppointment(item.id); getPatientAppointments(selected.uid).then(setAppointments); }
+            <TouchableOpacity onPress={() => {
+              Alert.alert('Delete', `Remove "${item.title}"?`, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: async () => {
+                  try {
+                    if (tab === 'Reminders') {
+                      await deletePatientReminder(item.id);
+                      setReminders(prev => prev.filter(r => r.id !== item.id));
+                    } else {
+                      await deletePatientAppointment(item.id);
+                      setAppointments(prev => prev.filter(a => a.id !== item.id));
+                    }
+                  } catch (e) { Alert.alert('Error', 'Failed to delete. Try again.'); }
+                }},
+              ]);
             }}>
               <Ionicons name="trash-outline" size={22} color={COLORS.danger} />
             </TouchableOpacity>

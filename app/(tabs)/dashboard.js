@@ -76,8 +76,8 @@ export default function DashboardScreen() {
         </View>
         <View style={styles.statsRow}>
           {[
-            { num: reminders.length, label: 'Reminders' },
-            { num: appointments.length, label: 'Appointments' },
+            { num: reminders.length, label: 'Reminder' + (reminders.length !== 1 ? 's' : '') },
+            { num: appointments.length, label: 'Appointment' + (appointments.length !== 1 ? 's' : '') },
             { num: completedToday, label: 'Done Today' },
           ].map((s, i) => (
             <View key={i} style={styles.statBox}>
@@ -129,7 +129,7 @@ export default function DashboardScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>{r.title}</Text>
-              <Text style={styles.cardSub}>🕐 {r.time} • {r.type}</Text>
+              <Text style={styles.cardSub}>🕐 {r.displayTime || r.time} • {r.type}</Text>
             </View>
             <View style={styles.typePill}><Text style={styles.typePillText}>{r.repeat || 'Daily'}</Text></View>
           </View>

@@ -45,7 +45,10 @@ export default function AppointmentsScreen() {
   const handleDelete = (id) =>
     Alert.alert('Delete Appointment', 'Remove this appointment?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteAppointment(id); load(); } },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        setAppointments(prev => prev.filter(a => a.id !== id));
+        await deleteAppointment(id);
+      }},
     ]);
 
   const today = new Date().toISOString().split('T')[0];
