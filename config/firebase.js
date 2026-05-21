@@ -5,13 +5,13 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCod6G5jKHMkNV3XyEPKvaEUcYpb227-zg",
-  authDomain: "dementia-a06cd.firebaseapp.com",
-  projectId: "dementia-a06cd",
-  storageBucket: "dementia-a06cd.firebasestorage.app",
-  messagingSenderId: "85788968871",
-  appId: "1:85788968871:web:694070eb4ede4fe5435882",
-  measurementId: "G-JEZ8L03Y0J",
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
