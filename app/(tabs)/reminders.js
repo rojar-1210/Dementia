@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Modal, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../hooks/useAuth';
 import { addReminder, getReminders, deleteReminder } from '../../services/firestoreService';
-import { scheduleReminder, requestPermissions, initializeNotifications, cancelNotification, rescheduleAllReminders } from '../../services/notificationService';
+import { scheduleReminder, initializeNotifications, rescheduleAllReminders } from '../../services/notificationService';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants/theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TYPES = [
   { key: 'medication', label: 'Medication', emoji: '💊', color: '#FFEBEE' },
@@ -14,65 +14,67 @@ const TYPES = [
   { key: 'exercise', label: 'Exercise', emoji: '🏃', color: '#E8F5E9' },
 ];
 const REPEATS = ['Once', 'Daily', 'Weekly'];
+const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
+const MINUTES = ['00', '15', '30', '45'];
+
+const DEVICE_UID_KEY = 'device_uid';
+const getDeviceUid = async () => {
+  let uid = await AsyncStorage.getItem(DEVICE_UID_KEY);
+  if (!uid) { uid = 'device_' + Math.random().toString(36).slice(2) + Date.now(); await AsyncStorage.setItem(DEVICE_UID_KEY, uid); }
+  return uid;
+};
 
 export default function RemindersScreen() {
-  const { user } = useAuth();
+  const [uid, setUid] = useState(null);
   const [reminders, setReminders] = useState([]);
   const [modal, setModal] = useState(false);
   const [title, setTitle] = useState('');
-  const [time, setTime] = useState('08:00');
+  const [hour, setHour] = useState('08');
+  const [minute, setMinute] = useState('00');
+  const [ampm, setAmpm] = useState('AM');
   const [type, setType] = useState('medication');
   const [repeat, setRepeat] = useState('Daily');
   const [voiceAlert, setVoiceAlert] = useState(true);
   const [filter, setFilter] = useState('All');
 
-  const load = async () => {
-    if (!user) return;
+  useEffect(() => {
+    getDeviceUid().then(id => { setUid(id); loadReminders(id); });
+    initializeNotifications();
+  }, []);
+
+  const loadReminders = async (id) => {
     try {
-      const data = await getReminders(user.uid);
+      const data = await getReminders(id);
       setReminders(data);
-      await rescheduleAllReminders(data); // re-sync notifications on every load
+      await rescheduleAllReminders(data);
     } catch (_) {}
   };
 
-  useEffect(() => { 
-    load(); 
-    initializeNotifications(); // Initialize background notifications
-  }, []);
-
-  const reset = () => { setTitle(''); setTime('08:00'); setType('medication'); setRepeat('Daily'); setVoiceAlert(true); };
+  const reset = () => { setTitle(''); setHour('08'); setMinute('00'); setAmpm('AM'); setType('medication'); setRepeat('Daily'); setVoiceAlert(true); };
 
   const handleAdd = async () => {
     if (!title.trim()) return Alert.alert('Error', 'Please enter a reminder title');
-    const [h, m] = time.split(':').map(Number);
-    if (isNaN(h) || isNaN(m) || h > 23 || m > 59) return Alert.alert('Error', 'Enter valid time as HH:MM');
+    let h = parseInt(hour);
+    const m = parseInt(minute);
+    if (ampm === 'PM' && h !== 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    const displayTime = `${hour}:${minute} ${ampm}`;
     const trigger = new Date();
     trigger.setHours(h, m, 0, 0);
     if (trigger < new Date()) trigger.setDate(trigger.getDate() + 1);
     try {
-      const reminderData = { title: title.trim(), time, type, repeat, voiceAlert };
-      await addReminder(user.uid, reminderData);
-      
-      // Schedule notification with repeat
-      const notificationId = await scheduleReminder(
-        `${TYPES.find(t => t.key === type)?.emoji} ${title}`, 
-        `Time for your ${type}!`, 
-        trigger,
-        repeat
-      );
-      
-      if (notificationId) {
-        Alert.alert('✅ Success', `Reminder set! It will repeat ${repeat.toLowerCase()}.`);
-      }
-      
-      setModal(false); reset(); load();
+      const reminderData = { title: title.trim(), time: timeStr, displayTime, type, repeat, voiceAlert };
+      await addReminder(uid, reminderData);
+      await scheduleReminder(`${TYPES.find(t => t.key === type)?.emoji} ${title.trim()}`, `Time for your ${type}!`, trigger, repeat);
+      setModal(false); reset(); loadReminders(uid);
     } catch (e) { Alert.alert('Error', e.message); }
   };
 
   const handleDelete = (id) =>
     Alert.alert('Delete Reminder', 'Remove this reminder?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteReminder(id); load(); } },
+      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteReminder(id); loadReminders(uid); } },
     ]);
 
   const filtered = filter === 'All' ? reminders : reminders.filter(r => r.type === TYPES.find(t => t.label === filter)?.key);
@@ -89,7 +91,6 @@ export default function RemindersScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Filter */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
         {['All', ...TYPES.map(t => t.label)].map(f => (
           <TouchableOpacity key={f} style={[styles.filterBtn, filter === f && styles.filterActive]} onPress={() => setFilter(f)}>
@@ -115,7 +116,7 @@ export default function RemindersScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>{r.title}</Text>
-                <Text style={styles.cardSub}>🕐 {r.time}  •  🔁 {r.repeat || 'Daily'}{r.voiceAlert ? '  •  🔊' : ''}</Text>
+                <Text style={styles.cardSub}>🕐 {r.displayTime || r.time}  •  🔁 {r.repeat || 'Daily'}{r.voiceAlert ? '  •  🔊' : ''}</Text>
                 <View style={[styles.pill, { backgroundColor: t?.color || '#EAF2FF' }]}>
                   <Text style={styles.pillText}>{t?.label || r.type}</Text>
                 </View>
@@ -142,7 +143,33 @@ export default function RemindersScreen() {
             <TextInput style={styles.input} placeholder="e.g. Take Blood Pressure Pill" placeholderTextColor={COLORS.subtext} value={title} onChangeText={setTitle} />
 
             <Text style={styles.label}>Time *</Text>
-            <TextInput style={styles.input} placeholder="HH:MM  e.g. 08:30" placeholderTextColor={COLORS.subtext} value={time} onChangeText={setTime} keyboardType="numbers-and-punctuation" />
+            <View style={styles.timeRow}>
+              {/* Hour */}
+              <ScrollView style={styles.timePicker} showsVerticalScrollIndicator={false}>
+                {HOURS.map(h => (
+                  <TouchableOpacity key={h} style={[styles.timeItem, hour === h && styles.timeItemActive]} onPress={() => setHour(h)}>
+                    <Text style={[styles.timeItemText, hour === h && styles.timeItemTextActive]}>{h}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              <Text style={styles.timeSep}>:</Text>
+              {/* Minute */}
+              <ScrollView style={styles.timePicker} showsVerticalScrollIndicator={false}>
+                {MINUTES.map(m => (
+                  <TouchableOpacity key={m} style={[styles.timeItem, minute === m && styles.timeItemActive]} onPress={() => setMinute(m)}>
+                    <Text style={[styles.timeItemText, minute === m && styles.timeItemTextActive]}>{m}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              {/* AM/PM */}
+              <View style={styles.ampmCol}>
+                {['AM', 'PM'].map(p => (
+                  <TouchableOpacity key={p} style={[styles.ampmBtn, ampm === p && styles.ampmActive]} onPress={() => setAmpm(p)}>
+                    <Text style={[styles.ampmText, ampm === p && styles.ampmTextActive]}>{p}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
 
             <Text style={styles.label}>Type</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.md }}>
@@ -215,6 +242,18 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: FONTS.xlarge, fontWeight: 'bold', color: COLORS.text },
   label: { fontSize: FONTS.medium, fontWeight: '600', color: COLORS.text, marginBottom: SPACING.xs },
   input: { backgroundColor: COLORS.background, borderRadius: RADIUS.md, padding: SPACING.md, fontSize: FONTS.medium, color: COLORS.text, marginBottom: SPACING.md, borderWidth: 1.5, borderColor: COLORS.border },
+  timeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md, backgroundColor: COLORS.background, borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: COLORS.border, padding: SPACING.sm },
+  timePicker: { flex: 1, maxHeight: 120 },
+  timeItem: { padding: SPACING.sm, alignItems: 'center', borderRadius: RADIUS.sm },
+  timeItemActive: { backgroundColor: COLORS.primary },
+  timeItemText: { fontSize: FONTS.large, color: COLORS.subtext, fontWeight: '600' },
+  timeItemTextActive: { color: COLORS.white },
+  timeSep: { fontSize: FONTS.xlarge, fontWeight: 'bold', color: COLORS.text, marginHorizontal: SPACING.xs },
+  ampmCol: { flexDirection: 'column', gap: SPACING.xs, marginLeft: SPACING.sm },
+  ampmBtn: { paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, borderRadius: RADIUS.sm, borderWidth: 1.5, borderColor: COLORS.border },
+  ampmActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  ampmText: { fontSize: FONTS.medium, fontWeight: '700', color: COLORS.subtext },
+  ampmTextActive: { color: COLORS.white },
   typeBtn: { alignItems: 'center', padding: SPACING.sm, borderRadius: RADIUS.md, borderWidth: 2, borderColor: COLORS.border, marginRight: SPACING.sm, minWidth: 76 },
   typeBtnActive: { borderColor: COLORS.primary, backgroundColor: '#EAF2FF' },
   typeLabel: { fontSize: 13, color: COLORS.subtext, marginTop: 4 },
