@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Modal, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { addReminder, getReminders, deleteReminder } from '../../services/firestoreService';
-import { scheduleReminder, initializeNotifications, rescheduleAllReminders } from '../../services/notificationService';
+import { scheduleReminder, initializeNotifications } from '../../services/notificationService';
 import { SPACING, RADIUS } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,7 +30,6 @@ export default function RemindersScreen() {
   const C = colors;
   const F = fonts;
   const [uid, setUid] = useState(null);
-  const uidRef = useRef(null);
   const [reminders, setReminders] = useState([]);
   const [modal, setModal] = useState(false);
   const [title, setTitle] = useState('');
@@ -43,16 +42,12 @@ export default function RemindersScreen() {
   const [filter, setFilter] = useState('All');
 
   useEffect(() => {
-    getDeviceUid().then(id => { setUid(id); uidRef.current = id; loadReminders(id); });
+    getDeviceUid().then(id => { setUid(id); loadReminders(id); });
     initializeNotifications();
   }, []);
 
   const loadReminders = async (id) => {
-    try {
-      const data = await getReminders(id);
-      setReminders(data);
-      await rescheduleAllReminders(data);
-    } catch (_) {}
+    try { setReminders(await getReminders(id)); } catch (_) {}
   };
 
   const reset = () => { setTitle(''); setHour('08'); setMinute('00'); setAmpm('AM'); setType('medication'); setRepeat('Daily'); setVoiceAlert(true); };
@@ -80,15 +75,8 @@ export default function RemindersScreen() {
     Alert.alert('Delete Reminder', 'Remove this reminder?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        const prev = reminders;
-        setReminders(p => p.filter(r => r.id !== id));
-        try {
-          await deleteReminder(id);
-          await rescheduleAllReminders(reminders.filter(r => r.id !== id));
-        } catch (e) {
-          setReminders(prev);
-          Alert.alert('Error', 'Could not delete reminder. Please try again.');
-        }
+        setReminders(prev => prev.filter(r => r.id !== id));
+        await deleteReminder(id);
       }},
     ]);
 
