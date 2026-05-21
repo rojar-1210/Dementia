@@ -33,8 +33,10 @@ export default function LoginScreen() {
 
   const handleGoogle = async () => {
     try {
-      await signInWithGoogle('patient');
+      const result = await signInWithGoogle('patient');
+      if (!result) return; // popup closed by user
     } catch (e) {
+      console.error('Google login error:', e.message);
       Alert.alert('Google Login Failed', e.message);
     }
   };

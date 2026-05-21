@@ -48,7 +48,6 @@ export const signInWithGoogle = async (role = 'patient') => {
   provider.addScope('profile');
   provider.setCustomParameters({ prompt: 'select_account' });
 
-  // Try popup first, fall back to redirect
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
@@ -65,15 +64,12 @@ export const signInWithGoogle = async (role = 'patient') => {
     const profile = await getDoc(doc(db, 'users', user.uid));
     return { user, profile: profile.data() };
   } catch (err) {
-    if (err.code === 'auth/unauthorized-domain' || err.code === 'auth/popup-blocked') {
-      // Use redirect as fallback
-      if (typeof localStorage !== 'undefined') localStorage.setItem('googleRole', role);
-      await signInWithRedirect(auth, provider);
+    console.error('Google auth error code:', err.code);
+    console.error('Google auth error message:', err.message);
+    if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
       return null;
     }
-    // Show friendly error for other cases
-    if (err.code === 'auth/popup-closed-by-user') return null;
-    throw err;
+    throw new Error(`Google Sign-In failed: ${err.code} - ${err.message}`);
   }
 };
 
