@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { getUserProfile } from '../services/authService';
+import { getUserProfile, handleGoogleRedirectResult } from '../services/authService';
 
 const AuthContext = createContext(null);
 
@@ -11,10 +11,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Always sign out on fresh load in dev/web
-    if (typeof window !== 'undefined') {
-      signOut(auth).catch(() => {});
-    }
+    // Handle Google redirect result first before setting up auth listener
+    const savedRole = typeof localStorage !== 'undefined' ? localStorage.getItem('googleRole') || 'patient' : 'patient';
+    handleGoogleRedirectResult(savedRole).finally(() => {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('googleRole');
+    });
 
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {

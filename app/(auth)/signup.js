@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { signUp, signInWithGoogle, handleGoogleRedirectResult } from '../../services/authService';
+import { signUp, signInWithGoogle } from '../../services/authService';
 
 const C = {
   bg: '#f8faff',
@@ -20,24 +20,9 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('patient');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [googleRoleModal, setGoogleRoleModal] = useState(false);
   const [googleRole, setGoogleRole] = useState('patient');
   const [focused, setFocused] = useState('');
-
-  useEffect(() => {
-    // Handle redirect result — _layout.js will auto-route via onAuthStateChanged
-    const checkRedirect = async () => {
-      try {
-        setGoogleLoading(true);
-        const savedRole = typeof localStorage !== 'undefined' ? localStorage.getItem('googleRole') || 'patient' : 'patient';
-        await handleGoogleRedirectResult(savedRole);
-        if (typeof localStorage !== 'undefined') localStorage.removeItem('googleRole');
-      } catch (e) {}
-      finally { setGoogleLoading(false); }
-    };
-    checkRedirect();
-  }, []);
 
   const handleSignup = async () => {
     if (!name || !email || !password) return Alert.alert('Error', 'Please fill all fields');
@@ -60,10 +45,9 @@ export default function SignupScreen() {
     } catch (e) { Alert.alert('Google Signup Failed', e.message); }
   };
 
-  if (googleLoading) return (
+  if (loading) return (
     <View style={s.page}>
       <ActivityIndicator size="large" color={C.primary} />
-      <Text style={s.loadingText}>Setting up your account...</Text>
     </View>
   );
 

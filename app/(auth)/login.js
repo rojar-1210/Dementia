@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Platform } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { signIn, signInWithGoogle, handleGoogleRedirectResult } from '../../services/authService';
+import { signIn, signInWithGoogle } from '../../services/authService';
 
 const C = {
   bg: '#f8faff',
@@ -19,20 +19,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [focused, setFocused] = useState('');
-
-  useEffect(() => {
-    const checkRedirect = async () => {
-      try {
-        setGoogleLoading(true);
-        const savedRole = typeof localStorage !== 'undefined' ? localStorage.getItem('googleRole') || 'patient' : 'patient';
-        await handleGoogleRedirectResult(savedRole);
-      } catch (e) {}
-      finally { setGoogleLoading(false); }
-    };
-    checkRedirect();
-  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) return Alert.alert('Error', 'Please fill all fields');
