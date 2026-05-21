@@ -3,19 +3,22 @@ import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, Alert, Te
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
 import { logOut } from '../../services/authService';
-import { COLORS, FONTS, SPACING, RADIUS } from '../../constants/theme';
+import { FONTS, SPACING, RADIUS } from '../../constants/theme';
 
 export default function PatientSettings() {
   const { profile } = useAuth();
+  const { darkMode, toggleDarkMode, colors } = useTheme();
   const router = useRouter();
   const [voiceOn, setVoiceOn] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [fontSize, setFontSize] = useState('Large');
   const [contactModal, setContactModal] = useState(false);
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [contacts, setContacts] = useState([]);
+
+  const C = colors;
 
   const addContact = () => {
     if (!contactName || !contactPhone) return Alert.alert('Error', 'Fill all fields');
@@ -24,61 +27,61 @@ export default function PatientSettings() {
   };
 
   const SettingRow = ({ icon, label, right }) => (
-    <View style={styles.row}>
-      <Ionicons name={icon} size={26} color={COLORS.primary} style={{ marginRight: SPACING.md }} />
-      <Text style={styles.rowLabel}>{label}</Text>
+    <View style={[styles.row, { borderBottomColor: C.border }]}>
+      <Ionicons name={icon} size={26} color={C.primary} style={{ marginRight: SPACING.md }} />
+      <Text style={[styles.rowLabel, { color: C.text }]}>{label}</Text>
       {right}
     </View>
   );
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: C.background }]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>⚙️ Settings</Text>
       </View>
 
       {/* Profile */}
-      <View style={styles.profileCard}>
-        <View style={styles.avatar}><Text style={styles.avatarText}>{profile?.name?.[0]?.toUpperCase() || '?'}</Text></View>
+      <View style={[styles.profileCard, { backgroundColor: C.card }]}>
+        <View style={[styles.avatar, { backgroundColor: C.primary }]}><Text style={styles.avatarText}>{profile?.name?.[0]?.toUpperCase() || '?'}</Text></View>
         <View>
-          <Text style={styles.profileName}>{profile?.name || 'Patient'}</Text>
-          <Text style={styles.profileRole}>🧓 Patient</Text>
-          <Text style={styles.profileEmail}>{profile?.email || ''}</Text>
+          <Text style={[styles.profileName, { color: C.text }]}>{profile?.name || 'Patient'}</Text>
+          <Text style={[styles.profileRole, { color: C.subtext }]}>🧓 Patient</Text>
+          <Text style={[styles.profileEmail, { color: C.subtext }]}>{profile?.email || ''}</Text>
         </View>
       </View>
 
-      <Text style={styles.sectionLabel}>Accessibility</Text>
-      <View style={styles.card}>
+      <Text style={[styles.sectionLabel, { color: C.subtext }]}>Accessibility</Text>
+      <View style={[styles.card, { backgroundColor: C.card }]}>
         <SettingRow icon="text" label="Font Size" right={
           <View style={styles.fontRow}>
             {['Small', 'Large', 'XLarge'].map(s => (
-              <TouchableOpacity key={s} style={[styles.fontBtn, fontSize === s && styles.fontBtnActive]} onPress={() => setFontSize(s)}>
-                <Text style={[styles.fontBtnText, fontSize === s && { color: COLORS.primary }]}>{s}</Text>
+              <TouchableOpacity key={s} style={[styles.fontBtn, { borderColor: C.border }, fontSize === s && { borderColor: C.primary, backgroundColor: '#EAF2FF' }]} onPress={() => setFontSize(s)}>
+                <Text style={[styles.fontBtnText, { color: fontSize === s ? C.primary : C.subtext }]}>{s}</Text>
               </TouchableOpacity>
             ))}
           </View>
         } />
-        <SettingRow icon="mic" label="Voice Assistant" right={<Switch value={voiceOn} onValueChange={setVoiceOn} trackColor={{ true: COLORS.primary }} />} />
-        <SettingRow icon="moon" label="Dark Mode" right={<Switch value={darkMode} onValueChange={setDarkMode} trackColor={{ true: COLORS.primary }} />} />
+        <SettingRow icon="mic" label="Voice Assistant" right={<Switch value={voiceOn} onValueChange={setVoiceOn} trackColor={{ true: C.primary }} />} />
+        <SettingRow icon="moon" label="Dark Mode" right={<Switch value={darkMode} onValueChange={toggleDarkMode} trackColor={{ true: C.primary }} />} />
       </View>
 
-      <Text style={styles.sectionLabel}>Emergency Contacts</Text>
-      <View style={styles.card}>
+      <Text style={[styles.sectionLabel, { color: C.subtext }]}>Emergency Contacts</Text>
+      <View style={[styles.card, { backgroundColor: C.card }]}>
         {contacts.map((c, i) => (
-          <View key={i} style={styles.contactRow}>
-            <Ionicons name="person-circle" size={28} color={COLORS.primary} />
+          <View key={i} style={[styles.contactRow, { borderBottomColor: C.border }]}>
+            <Ionicons name="person-circle" size={28} color={C.primary} />
             <View style={{ flex: 1, marginLeft: SPACING.sm }}>
-              <Text style={styles.contactName}>{c.name}</Text>
-              <Text style={styles.contactPhone}>{c.phone}</Text>
+              <Text style={[styles.contactName, { color: C.text }]}>{c.name}</Text>
+              <Text style={[styles.contactPhone, { color: C.subtext }]}>{c.phone}</Text>
             </View>
             <TouchableOpacity onPress={() => setContacts(contacts.filter((_, j) => j !== i))}>
-              <Ionicons name="trash-outline" size={22} color={COLORS.danger} />
+              <Ionicons name="trash-outline" size={22} color={C.danger} />
             </TouchableOpacity>
           </View>
         ))}
         <TouchableOpacity style={styles.addContactBtn} onPress={() => setContactModal(true)}>
-          <Ionicons name="add-circle" size={24} color={COLORS.primary} />
-          <Text style={styles.addContactText}>Add Emergency Contact</Text>
+          <Ionicons name="add-circle" size={24} color={C.primary} />
+          <Text style={[styles.addContactText, { color: C.primary }]}>Add Emergency Contact</Text>
         </TouchableOpacity>
       </View>
 
@@ -89,10 +92,10 @@ export default function PatientSettings() {
 
       <Modal visible={contactModal} transparent animationType="slide">
         <View style={styles.overlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Add Emergency Contact</Text>
-            <TextInput style={styles.input} placeholder="Contact Name" placeholderTextColor={COLORS.subtext} value={contactName} onChangeText={setContactName} />
-            <TextInput style={styles.input} placeholder="Phone Number" placeholderTextColor={COLORS.subtext} value={contactPhone} onChangeText={setContactPhone} keyboardType="phone-pad" />
+          <View style={[styles.modalBox, { backgroundColor: C.card }]}>
+            <Text style={[styles.modalTitle, { color: C.text }]}>Add Emergency Contact</Text>
+            <TextInput style={[styles.input, { backgroundColor: C.background, color: C.text, borderColor: C.border }]} placeholder="Contact Name" placeholderTextColor={C.subtext} value={contactName} onChangeText={setContactName} />
+            <TextInput style={[styles.input, { backgroundColor: C.background, color: C.text, borderColor: C.border }]} placeholder="Phone Number" placeholderTextColor={C.subtext} value={contactPhone} onChangeText={setContactPhone} keyboardType="phone-pad" />
             <View style={styles.modalRow}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setContactModal(false)}><Text style={styles.cancelText}>Cancel</Text></TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={addContact}><Text style={styles.saveText}>Save</Text></TouchableOpacity>
