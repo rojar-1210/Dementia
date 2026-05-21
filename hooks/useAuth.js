@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { getUserProfile } from '../services/authService';
 
@@ -11,25 +11,27 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+    // Always sign out on fresh load in dev/web
+    if (typeof window !== 'undefined') {
+      signOut(auth).catch(() => {});
+    }
+
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-        const p = await getUserProfile(firebaseUser.uid);
-        setProfile(p);
+        setLoading(false);
+        getUserProfile(firebaseUser.uid).then(setProfile);
       } else {
         setUser(null);
         setProfile(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
     return unsub;
   }, []);
 
   const refreshProfile = async () => {
-    if (user) {
-      const p = await getUserProfile(user.uid);
-      setProfile(p);
-    }
+    if (user) getUserProfile(user.uid).then(setProfile);
   };
 
   return (
