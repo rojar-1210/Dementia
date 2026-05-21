@@ -47,11 +47,34 @@ export const signInWithGoogle = async (role = 'patient') => {
   provider.addScope('email');
   provider.addScope('profile');
   provider.setCustomParameters({ prompt: 'select_account' });
-  // Always use redirect — routes through dementia-care-56569.firebaseapp.com
-  // which is already authorized, so no need to add Vercel domain
-  if (typeof localStorage !== 'undefined') localStorage.setItem('googleRole', role);
-  await signInWithRedirect(auth, provider);
-  return null;
+
+  // Try popup first, fall back to redirect
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (!snap.exists()) {
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName || 'User',
+        role,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    const profile = await getDoc(doc(db, 'users', user.uid));
+    return { user, profile: profile.data() };
+  } catch (err) {
+    if (err.code === 'auth/unauthorized-domain' || err.code === 'auth/popup-blocked') {
+      // Use redirect as fallback
+      if (typeof localStorage !== 'undefined') localStorage.setItem('googleRole', role);
+      await signInWithRedirect(auth, provider);
+      return null;
+    }
+    // Show friendly error for other cases
+    if (err.code === 'auth/popup-closed-by-user') return null;
+    throw err;
+  }
 };
 
 export const handleGoogleRedirectResult = async (role = 'patient') => {
