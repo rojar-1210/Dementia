@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, Alert, Modal, ActivityIndicator, RefreshControl,
+  StyleSheet, Alert, Modal, ActivityIndicator, RefreshControl, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
@@ -83,24 +83,25 @@ export default function RemindersScreen() {
     }
   };
 
-  const handleDelete = (id, title) => {
-    Alert.alert('Delete Reminder', `Remove "${title}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive',
-        onPress: async () => {
-          setDeletingId(id);
-          try {
-            await deleteReminder(id);
-            setReminders(prev => prev.filter(r => r.id !== id));
-          } catch (e) {
-            Alert.alert('Error', 'Failed to delete. Try again.');
-          } finally {
-            setDeletingId(null);
-          }
-        },
-      },
-    ]);
+  const handleDelete = async (id, title) => {
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm(`Delete "${title}"?`)
+      : await new Promise(resolve =>
+          Alert.alert('Delete Reminder', `Remove "${title}"?`, [
+            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
+          ])
+        );
+    if (!confirmed) return;
+    setDeletingId(id);
+    try {
+      await deleteReminder(id);
+      setReminders(prev => prev.filter(r => r.id !== id));
+    } catch (e) {
+      Alert.alert('Error', 'Failed to delete. Try again.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
