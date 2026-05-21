@@ -1,18 +1,23 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '../hooks/useAuth';
-import { ThemeProvider } from '../hooks/useTheme';
+import { ThemeProvider, useTheme } from '../hooks/useTheme';
 import { useFonts } from 'expo-font';
+import { View, Text } from 'react-native';
 import { COLORS } from '../constants/theme';
 
 function RootNavigator() {
   const { user, profile, loading } = useAuth();
+  const { fontFamily } = useTheme();
   const router = useRouter();
   const segments = useSegments();
 
   const [fontsLoaded] = useFonts({
-    'Apertura': require('../assets/fonts/Apertura.ttf'),
+    'PlayfairDisplay': require('../assets/fonts/PlayfairDisplay-Regular.ttf'),
+    'PlayfairDisplay-Bold': require('../assets/fonts/PlayfairDisplay-Bold.ttf'),
   });
+
+  if (!fontsLoaded) return null;
 
   useEffect(() => {
     if (loading) return;

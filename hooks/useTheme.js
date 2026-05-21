@@ -32,7 +32,7 @@ export const ThemeProvider = ({ children }) => {
   const changeFontSize = async (val) => { setFontSize(val); await AsyncStorage.setItem('fontSize', val); };
 
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleDarkMode, fontSize, changeFontSize, colors: darkMode ? DARK : LIGHT, fonts: FONT_SIZES[fontSize] }}>
+    <ThemeContext.Provider value={{ darkMode, toggleDarkMode, fontSize, changeFontSize, colors: darkMode ? DARK : LIGHT, fonts: FONT_SIZES[fontSize], fontFamily: 'PlayfairDisplay', fontFamilyBold: 'PlayfairDisplay-Bold' }}>
       {children}
     </ThemeContext.Provider>
   );
