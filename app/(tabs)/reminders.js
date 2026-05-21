@@ -3,7 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert,
 import { Ionicons } from '@expo/vector-icons';
 import { addReminder, getReminders, deleteReminder } from '../../services/firestoreService';
 import { scheduleReminder, initializeNotifications, rescheduleAllReminders } from '../../services/notificationService';
-import { COLORS, FONTS, SPACING, RADIUS } from '../../constants/theme';
+import { SPACING, RADIUS } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TYPES = [
@@ -25,6 +26,9 @@ const getDeviceUid = async () => {
 };
 
 export default function RemindersScreen() {
+  const { colors, fonts, fontFamily, fontFamilyBold } = useTheme();
+  const C = colors;
+  const F = fonts;
   const [uid, setUid] = useState(null);
   const [reminders, setReminders] = useState([]);
   const [modal, setModal] = useState(false);
@@ -74,27 +78,30 @@ export default function RemindersScreen() {
   const handleDelete = (id) =>
     Alert.alert('Delete Reminder', 'Remove this reminder?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteReminder(id); loadReminders(uid); } },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        setReminders(prev => prev.filter(r => r.id !== id));
+        await deleteReminder(id);
+      }},
     ]);
 
   const filtered = filter === 'All' ? reminders : reminders.filter(r => r.type === TYPES.find(t => t.label === filter)?.key);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: C.background }]}>
+      <View style={[styles.header, { backgroundColor: C.primary }]}>
         <View>
-          <Text style={styles.headerTitle}>⏰ Reminders</Text>
-          <Text style={styles.headerSub}>{reminders.length} active reminder{reminders.length !== 1 ? 's' : ''}</Text>
+          <Text style={[styles.headerTitle, { color: C.white, fontFamily: fontFamilyBold, fontSize: F.xlarge }]}>⏰ Reminders</Text>
+          <Text style={[styles.headerSub, { color: 'rgba(255,255,255,0.8)', fontFamily }]}>{reminders.length} active reminder{reminders.length !== 1 ? 's' : ''}</Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => setModal(true)}>
-          <Ionicons name="add" size={30} color={COLORS.white} />
+          <Ionicons name="add" size={30} color={C.white} />
         </TouchableOpacity>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
         {['All', ...TYPES.map(t => t.label)].map(f => (
-          <TouchableOpacity key={f} style={[styles.filterBtn, filter === f && styles.filterActive]} onPress={() => setFilter(f)}>
-            <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{f}</Text>
+          <TouchableOpacity key={f} style={[styles.filterBtn, { backgroundColor: C.card, borderColor: C.border }, filter === f && { backgroundColor: C.primary, borderColor: C.primary }]} onPress={() => setFilter(f)}>
+            <Text style={[styles.filterText, { color: filter === f ? C.white : C.subtext, fontFamily }]}>{f}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -103,26 +110,26 @@ export default function RemindersScreen() {
         {filtered.length === 0 && (
           <View style={styles.emptyBox}>
             <Text style={{ fontSize: 60 }}>⏰</Text>
-            <Text style={styles.emptyTitle}>No reminders yet</Text>
-            <Text style={styles.emptySub}>Tap + to add your first reminder</Text>
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: fontFamilyBold, fontSize: F.large }]}>No reminders yet</Text>
+            <Text style={[styles.emptySub, { color: C.subtext, fontFamily, fontSize: F.medium }]}>Tap + to add your first reminder</Text>
           </View>
         )}
         {filtered.map(r => {
           const t = TYPES.find(x => x.key === r.type);
           return (
-            <View key={r.id} style={[styles.card, { borderLeftColor: COLORS.primary }]}>
+            <View key={r.id} style={[styles.card, { backgroundColor: C.card, borderLeftColor: C.primary }]}>
               <View style={[styles.cardIcon, { backgroundColor: t?.color || '#EAF2FF' }]}>
                 <Text style={{ fontSize: 28 }}>{t?.emoji || '🔔'}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>{r.title}</Text>
-                <Text style={styles.cardSub}>🕐 {r.displayTime || r.time}  •  🔁 {r.repeat || 'Daily'}{r.voiceAlert ? '  •  🔊' : ''}</Text>
+                <Text style={[styles.cardTitle, { color: C.text, fontFamily: fontFamilyBold, fontSize: F.large }]}>{r.title}</Text>
+                <Text style={[styles.cardSub, { color: C.subtext, fontFamily, fontSize: F.small }]}>🕐 {r.displayTime || r.time}  •  🔁 {r.repeat || 'Daily'}{r.voiceAlert ? '  •  🔊' : ''}</Text>
                 <View style={[styles.pill, { backgroundColor: t?.color || '#EAF2FF' }]}>
-                  <Text style={styles.pillText}>{t?.label || r.type}</Text>
+                  <Text style={[styles.pillText, { fontFamily }]}>{t?.label || r.type}</Text>
                 </View>
               </View>
               <TouchableOpacity onPress={() => handleDelete(r.id)} style={{ padding: SPACING.xs }}>
-                <Ionicons name="trash-outline" size={22} color={COLORS.danger} />
+                <Ionicons name="trash-outline" size={22} color={C.danger} />
               </TouchableOpacity>
             </View>
           );
@@ -131,80 +138,77 @@ export default function RemindersScreen() {
 
       <Modal visible={modal} transparent animationType="slide" onRequestClose={() => { setModal(false); reset(); }}>
         <View style={styles.overlay}>
-          <ScrollView style={styles.modalBox} showsVerticalScrollIndicator={false}>
+          <ScrollView style={[styles.modalBox, { backgroundColor: C.card }]} showsVerticalScrollIndicator={false}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Reminder</Text>
+              <Text style={[styles.modalTitle, { color: C.text, fontFamily: fontFamilyBold, fontSize: F.xlarge }]}>New Reminder</Text>
               <TouchableOpacity onPress={() => { setModal(false); reset(); }}>
-                <Ionicons name="close-circle" size={30} color={COLORS.subtext} />
+                <Ionicons name="close-circle" size={30} color={C.subtext} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.label}>Title *</Text>
-            <TextInput style={styles.input} placeholder="e.g. Take Blood Pressure Pill" placeholderTextColor={COLORS.subtext} value={title} onChangeText={setTitle} />
+            <Text style={[styles.label, { color: C.text, fontFamily: fontFamilyBold, fontSize: F.medium }]}>Title *</Text>
+            <TextInput style={[styles.input, { backgroundColor: C.background, color: C.text, borderColor: C.border, fontFamily, fontSize: F.medium }]} placeholder="e.g. Take Blood Pressure Pill" placeholderTextColor={C.subtext} value={title} onChangeText={setTitle} />
 
-            <Text style={styles.label}>Time *</Text>
-            <View style={styles.timeRow}>
-              {/* Hour */}
+            <Text style={[styles.label, { color: C.text, fontFamily: fontFamilyBold, fontSize: F.medium }]}>Time *</Text>
+            <View style={[styles.timeRow, { backgroundColor: C.background, borderColor: C.border }]}>
               <ScrollView style={styles.timePicker} showsVerticalScrollIndicator={false}>
                 {HOURS.map(h => (
-                  <TouchableOpacity key={h} style={[styles.timeItem, hour === h && styles.timeItemActive]} onPress={() => setHour(h)}>
-                    <Text style={[styles.timeItemText, hour === h && styles.timeItemTextActive]}>{h}</Text>
+                  <TouchableOpacity key={h} style={[styles.timeItem, hour === h && { backgroundColor: C.primary }]} onPress={() => setHour(h)}>
+                    <Text style={[styles.timeItemText, { color: hour === h ? C.white : C.subtext, fontFamily: fontFamilyBold, fontSize: F.large }]}>{h}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-              <Text style={styles.timeSep}>:</Text>
-              {/* Minute */}
+              <Text style={[styles.timeSep, { color: C.text, fontFamily: fontFamilyBold, fontSize: F.xlarge }]}>:</Text>
               <ScrollView style={styles.timePicker} showsVerticalScrollIndicator={false}>
                 {MINUTES.map(m => (
-                  <TouchableOpacity key={m} style={[styles.timeItem, minute === m && styles.timeItemActive]} onPress={() => setMinute(m)}>
-                    <Text style={[styles.timeItemText, minute === m && styles.timeItemTextActive]}>{m}</Text>
+                  <TouchableOpacity key={m} style={[styles.timeItem, minute === m && { backgroundColor: C.primary }]} onPress={() => setMinute(m)}>
+                    <Text style={[styles.timeItemText, { color: minute === m ? C.white : C.subtext, fontFamily: fontFamilyBold, fontSize: F.large }]}>{m}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-              {/* AM/PM */}
               <View style={styles.ampmCol}>
                 {['AM', 'PM'].map(p => (
-                  <TouchableOpacity key={p} style={[styles.ampmBtn, ampm === p && styles.ampmActive]} onPress={() => setAmpm(p)}>
-                    <Text style={[styles.ampmText, ampm === p && styles.ampmTextActive]}>{p}</Text>
+                  <TouchableOpacity key={p} style={[styles.ampmBtn, { borderColor: C.border }, ampm === p && { backgroundColor: C.primary, borderColor: C.primary }]} onPress={() => setAmpm(p)}>
+                    <Text style={[styles.ampmText, { color: ampm === p ? C.white : C.subtext, fontFamily: fontFamilyBold, fontSize: F.medium }]}>{p}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
 
-            <Text style={styles.label}>Type</Text>
+            <Text style={[styles.label, { color: C.text, fontFamily: fontFamilyBold, fontSize: F.medium }]}>Type</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.md }}>
               {TYPES.map(t => (
-                <TouchableOpacity key={t.key} style={[styles.typeBtn, type === t.key && styles.typeBtnActive]} onPress={() => setType(t.key)}>
+                <TouchableOpacity key={t.key} style={[styles.typeBtn, { borderColor: C.border }, type === t.key && { borderColor: C.primary, backgroundColor: '#EAF2FF' }]} onPress={() => setType(t.key)}>
                   <Text style={{ fontSize: 26 }}>{t.emoji}</Text>
-                  <Text style={[styles.typeLabel, type === t.key && { color: COLORS.primary, fontWeight: '700' }]}>{t.label}</Text>
+                  <Text style={[styles.typeLabel, { color: type === t.key ? C.primary : C.subtext, fontFamily, fontWeight: type === t.key ? '700' : '400' }]}>{t.label}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
-            <Text style={styles.label}>Repeat</Text>
+            <Text style={[styles.label, { color: C.text, fontFamily: fontFamilyBold, fontSize: F.medium }]}>Repeat</Text>
             <View style={styles.repeatRow}>
               {REPEATS.map(r => (
-                <TouchableOpacity key={r} style={[styles.repeatBtn, repeat === r && styles.repeatActive]} onPress={() => setRepeat(r)}>
-                  <Text style={[styles.repeatText, repeat === r && { color: COLORS.primary, fontWeight: '700' }]}>{r}</Text>
+                <TouchableOpacity key={r} style={[styles.repeatBtn, { borderColor: C.border }, repeat === r && { borderColor: C.primary, backgroundColor: '#EAF2FF' }]} onPress={() => setRepeat(r)}>
+                  <Text style={[styles.repeatText, { color: repeat === r ? C.primary : C.subtext, fontFamily, fontWeight: repeat === r ? '700' : '400', fontSize: F.medium }]}>{r}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             <View style={styles.switchRow}>
               <View>
-                <Text style={styles.label}>🔊 Voice Alert</Text>
-                <Text style={styles.switchSub}>Speak reminder aloud</Text>
+                <Text style={[styles.label, { color: C.text, fontFamily: fontFamilyBold, fontSize: F.medium }]}>🔊 Voice Alert</Text>
+                <Text style={[styles.switchSub, { color: C.subtext, fontFamily }]}>Speak reminder aloud</Text>
               </View>
-              <Switch value={voiceAlert} onValueChange={setVoiceAlert} trackColor={{ false: COLORS.border, true: COLORS.primary }} thumbColor={COLORS.white} />
+              <Switch value={voiceAlert} onValueChange={setVoiceAlert} trackColor={{ false: C.border, true: C.primary }} thumbColor={C.white} />
             </View>
 
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setModal(false); reset(); }}>
-                <Text style={styles.cancelText}>Cancel</Text>
+              <TouchableOpacity style={[styles.cancelBtn, { borderColor: C.border }]} onPress={() => { setModal(false); reset(); }}>
+                <Text style={[styles.cancelText, { color: C.subtext, fontFamily, fontSize: F.medium }]}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleAdd}>
-                <Ionicons name="checkmark" size={22} color={COLORS.white} />
-                <Text style={styles.saveText}>Save</Text>
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: C.primary }]} onPress={handleAdd}>
+                <Ionicons name="checkmark" size={22} color={C.white} />
+                <Text style={[styles.saveText, { color: C.white, fontFamily: fontFamilyBold, fontSize: F.medium }]}>Save</Text>
               </TouchableOpacity>
             </View>
             <View style={{ height: SPACING.xl }} />
