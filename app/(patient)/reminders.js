@@ -23,20 +23,36 @@ export default function RemindersScreen() {
   const [type, setType] = useState('medication');
   const [dosage, setDosage] = useState('');
 
-  const load = async () => setReminders(await getReminders(user.uid));
+  const load = async () => {
+    try {
+      const data = await getReminders(user.uid);
+      setReminders(data);
+    } catch (e) {
+      console.log('Load reminders error:', e.message);
+    }
+  };
 
   useEffect(() => { load(); requestPermissions(); }, []);
 
   const handleAdd = async () => {
     if (!title || !time) return Alert.alert('Error', 'Fill all fields');
-    const [h, m] = time.split(':').map(Number);
-    const trigger = new Date();
-    trigger.setHours(h, m, 0, 0);
-    if (trigger < new Date()) trigger.setDate(trigger.getDate() + 1);
-    await addReminder(user.uid, { title, time, type, dosage });
-    await scheduleReminder(`⏰ ${title}`, `Time for your ${type}!${dosage ? ` Dosage: ${dosage}` : ''}`, trigger);
-    setModal(false); setTitle(''); setTime('08:00'); setDosage('');
-    load();
+    // Validate time format
+    const timeParts = time.split(':');
+    if (timeParts.length !== 2 || isNaN(timeParts[0]) || isNaN(timeParts[1])) {
+      return Alert.alert('Error', 'Enter time in HH:MM format (e.g. 08:30)');
+    }
+    try {
+      const [h, m] = timeParts.map(Number);
+      const trigger = new Date();
+      trigger.setHours(h, m, 0, 0);
+      if (trigger < new Date()) trigger.setDate(trigger.getDate() + 1);
+      await addReminder(user.uid, { title, time, type, dosage });
+      await scheduleReminder(`⏰ ${title}`, `Time for your ${type}!${dosage ? ` Dosage: ${dosage}` : ''}`, trigger);
+      setModal(false); setTitle(''); setTime('08:00'); setDosage('');
+      load();
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Failed to save reminder. Check your connection.');
+    }
   };
 
   const handleDelete = (id) =>
