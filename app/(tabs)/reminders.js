@@ -64,7 +64,7 @@ export default function RemindersScreen() {
     if (ampm === 'PM' && h !== 12) h += 12;
     if (ampm === 'AM' && h === 12) h = 0;
     const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    const displayTime = `${hour}:${minute} ${ampm}`;
+    const displayTime = `${hour.replace(/^0/, '') || '12'}:${minute} ${ampm}`;
     const trigger = new Date();
     trigger.setHours(h, m, 0, 0);
     if (trigger < new Date()) trigger.setDate(trigger.getDate() + 1);
@@ -80,8 +80,15 @@ export default function RemindersScreen() {
     Alert.alert('Delete Reminder', 'Remove this reminder?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        setReminders(prev => prev.filter(r => r.id !== id));
-        try { await deleteReminder(id); } catch (e) { console.error('Delete failed:', e); }
+        const prev = reminders;
+        setReminders(p => p.filter(r => r.id !== id));
+        try {
+          await deleteReminder(id);
+          await rescheduleAllReminders(reminders.filter(r => r.id !== id));
+        } catch (e) {
+          setReminders(prev);
+          Alert.alert('Error', 'Could not delete reminder. Please try again.');
+        }
       }},
     ]);
 
@@ -117,6 +124,12 @@ export default function RemindersScreen() {
         )}
         {filtered.map(r => {
           const t = TYPES.find(x => x.key === r.type);
+          const displayTime = r.displayTime || (() => {
+            const [hh, mm] = (r.time || '00:00').split(':').map(Number);
+            const ap = hh >= 12 ? 'PM' : 'AM';
+            const h12 = hh % 12 || 12;
+            return `${h12}:${String(mm).padStart(2, '0')} ${ap}`;
+          })();
           return (
             <View key={r.id} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.card, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.sm, elevation: 2, borderLeftWidth: 4, borderLeftColor: C.primary }}>
               <View style={{ width: 56, height: 56, borderRadius: RADIUS.sm, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.sm, backgroundColor: t?.color || '#EAF2FF' }}>
@@ -124,7 +137,7 @@ export default function RemindersScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: F.large, fontWeight: '600', color: C.text, fontFamily: fontFamilyBold }}>{r.title}</Text>
-                <Text style={{ fontSize: F.small, color: C.subtext, marginTop: 2, fontFamily }}>🕐 {r.displayTime || r.time}  •  🔁 {r.repeat || 'Daily'}{r.voiceAlert ? '  •  🔊' : ''}</Text>
+                <Text style={{ fontSize: F.small, color: C.subtext, marginTop: 2, fontFamily }}>🕐 {displayTime}  •  🔁 {r.repeat || 'Daily'}{r.voiceAlert ? '  •  🔊' : ''}</Text>
                 <View style={{ alignSelf: 'flex-start', borderRadius: RADIUS.full, paddingHorizontal: SPACING.sm, paddingVertical: 2, marginTop: SPACING.xs, backgroundColor: t?.color || '#EAF2FF' }}>
                   <Text style={{ fontSize: 12, color: C.text, fontWeight: '600', fontFamily }}>{t?.label || r.type}</Text>
                 </View>
