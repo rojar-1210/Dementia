@@ -1,30 +1,84 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-  <!-- Background circle -->
-  <circle cx="100" cy="100" r="100" fill="#4A90D9"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- Outer gradient background circle -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90D9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2C5F8A;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF8E53;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#00000033"/>
+    </filter>
+  </defs>
 
-  <!-- Brain shape -->
-  <g transform="translate(100,95)">
+  <!-- Background circle -->
+  <circle cx="200" cy="200" r="190" fill="url(#bgGrad)" filter="url(#shadow)"/>
+
+  <!-- White soft inner circle -->
+  <circle cx="200" cy="200" r="155" fill="white" opacity="0.08"/>
+
+  <!-- BRAIN shape -->
+  <g transform="translate(200, 185)">
     <!-- Left hemisphere -->
-    <path d="M-8,-35 C-30,-38 -52,-28 -55,-8 C-58,8 -48,20 -38,26
-             C-42,32 -40,42 -30,44 C-20,46 -14,38 -12,30
-             C-10,36 -4,40 2,38 L2,-35 Z"
-          fill="white" opacity="0.95"/>
+    <path d="
+      M -10,-65
+      C -20,-68 -45,-62 -60,-45
+      C -72,-30 -72,-10 -65,5
+      C -58,18 -48,25 -42,30
+      C -46,38 -44,52 -32,56
+      C -20,60 -12,50 -10,40
+      L -10,-65 Z"
+      fill="white" opacity="0.97"/>
+
     <!-- Right hemisphere -->
-    <path d="M8,-35 C30,-38 52,-28 55,-8 C58,8 48,20 38,26
-             C42,32 40,42 30,44 C20,46 14,38 12,30
-             C10,36 4,40 -2,38 L-2,-35 Z"
-          fill="white" opacity="0.85"/>
-    <!-- Center line -->
-    <line x1="0" y1="-35" x2="0" y2="38" stroke="#4A90D9" stroke-width="2.5"/>
-    <!-- Brain folds left -->
-    <path d="M-20,-20 Q-35,-15 -38,0" stroke="#4A90D9" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <path d="M-18,5 Q-32,10 -34,22" stroke="#4A90D9" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <!-- Brain folds right -->
-    <path d="M20,-20 Q35,-15 38,0" stroke="#4A90D9" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <path d="M18,5 Q32,10 34,22" stroke="#4A90D9" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="
+      M 10,-65
+      C 20,-68 45,-62 60,-45
+      C 72,-30 72,-10 65,5
+      C 58,18 48,25 42,30
+      C 46,38 44,52 32,56
+      C 20,60 12,50 10,40
+      L 10,-65 Z"
+      fill="white" opacity="0.88"/>
+
+    <!-- Center divide -->
+    <line x1="0" y1="-65" x2="0" y2="56"
+          stroke="#4A90D9" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- Left brain folds -->
+    <path d="M-22,-40 Q-45,-32 -50,-15" stroke="#4A90D9" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M-20,-10 Q-44,-2 -46,15" stroke="#4A90D9" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M-18,22 Q-36,28 -36,40" stroke="#4A90D9" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+    <!-- Right brain folds -->
+    <path d="M22,-40 Q45,-32 50,-15" stroke="#4A90D9" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M20,-10 Q44,-2 46,15" stroke="#4A90D9" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M18,22 Q36,28 36,40" stroke="#4A90D9" stroke-width="2" fill="none" stroke-linecap="round"/>
   </g>
 
-  <!-- Heart pulse line at bottom -->
-  <polyline points="30,155 55,155 65,135 75,170 85,145 95,155 115,155 125,140 135,165 145,155 170,155"
-            fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <!-- Heartbeat / ECG line -->
+  <polyline
+    points="50,295 90,295 108,265 122,318 136,280 150,295 175,295 192,275 208,310 224,295 250,295 265,272 280,312 295,295 350,295"
+    fill="none"
+    stroke="url(#heartGrad)"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-linejoin="round"/>
+
+  <!-- App name text -->
+  <text x="200" y="355" text-anchor="middle"
+        font-family="Arial, sans-serif"
+        font-size="26" font-weight="800"
+        fill="white" letter-spacing="1" opacity="0.95">
+    MEMORY CARE
+  </text>
+  <text x="200" y="378" text-anchor="middle"
+        font-family="Arial, sans-serif"
+        font-size="13" font-weight="400"
+        fill="white" letter-spacing="3" opacity="0.7">
+    ASSISTANT
+  </text>
 </svg>
