@@ -14,13 +14,15 @@ import { auth, db } from '../config/firebase';
 
 export const signUp = async (email, password, name, role) => {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  await setDoc(doc(db, 'users', userCredential.user.uid), {
+  const profileData = {
     uid: userCredential.user.uid,
     email,
     name,
-    role,
+    role: role || 'patient', // ensure role is never undefined
     createdAt: new Date().toISOString(),
-  });
+  };
+  console.log('Creating user with role:', profileData.role); // debug
+  await setDoc(doc(db, 'users', userCredential.user.uid), profileData);
   return userCredential.user;
 };
 

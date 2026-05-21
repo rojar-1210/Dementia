@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../config/firebase';
-import { getUserProfile } from '../services/authService';
-import { getRedirectResult } from 'firebase/auth';
+import { onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 
 const AuthContext = createContext(null);
 
@@ -38,8 +35,20 @@ export const AuthProvider = ({ children }) => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-        const p = await getUserProfile(firebaseUser.uid);
-        setProfile(p);
+        // Always fetch fresh profile from Firestore
+        try {
+          const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (snap.exists()) {
+            const profileData = snap.data();
+            console.log('Profile loaded:', profileData.role); // debug
+            setProfile(profileData);
+          } else {
+            setProfile(null);
+          }
+        } catch (e) {
+          console.error('Profile fetch error:', e);
+          setProfile(null);
+        }
       } else {
         setUser(null);
         setProfile(null);
@@ -52,8 +61,8 @@ export const AuthProvider = ({ children }) => {
 
   const refreshProfile = async () => {
     if (user) {
-      const p = await getUserProfile(user.uid);
-      setProfile(p);
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists()) setProfile(snap.data());
     }
   };
 
