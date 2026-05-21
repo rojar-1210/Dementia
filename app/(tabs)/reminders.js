@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Modal, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { addReminder, getReminders, deleteReminder } from '../../services/firestoreService';
@@ -30,6 +30,7 @@ export default function RemindersScreen() {
   const C = colors;
   const F = fonts;
   const [uid, setUid] = useState(null);
+  const uidRef = useRef(null);
   const [reminders, setReminders] = useState([]);
   const [modal, setModal] = useState(false);
   const [title, setTitle] = useState('');
@@ -42,7 +43,7 @@ export default function RemindersScreen() {
   const [filter, setFilter] = useState('All');
 
   useEffect(() => {
-    getDeviceUid().then(id => { setUid(id); loadReminders(id); });
+    getDeviceUid().then(id => { setUid(id); uidRef.current = id; loadReminders(id); });
     initializeNotifications();
   }, []);
 
@@ -80,7 +81,7 @@ export default function RemindersScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         setReminders(prev => prev.filter(r => r.id !== id));
-        await deleteReminder(id);
+        try { await deleteReminder(id); } catch (e) { console.error('Delete failed:', e); }
       }},
     ]);
 

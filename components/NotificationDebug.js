@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getAllScheduledNotifications, cancelAllNotifications } from '../services/notificationService';
+import { getAllScheduledNotifications, cancelAllNotifications, cancelNotification } from '../services/notificationService';
 import { COLORS, FONTS, SPACING, RADIUS } from '../constants/theme';
 
 export default function NotificationDebugScreen() {
@@ -47,10 +47,13 @@ export default function NotificationDebugScreen() {
           </View>
         )}
         {notifications.map((notif, i) => (
-          <View key={i} style={styles.card}>
+          <View key={notif.identifier} style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{notif.content.title}</Text>
               <Text style={styles.cardId}>#{notif.identifier.slice(0, 8)}</Text>
+              <TouchableOpacity onPress={async () => { await cancelNotification(notif.identifier); setNotifications(prev => prev.filter(n => n.identifier !== notif.identifier)); }}>
+                <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
+              </TouchableOpacity>
             </View>
             <Text style={styles.cardBody}>{notif.content.body}</Text>
             {notif.trigger && (
