@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { signUp, signInWithGoogle, handleGoogleRedirectResult } from '../../services/authService';
-import { COLORS, FONTS, SPACING, RADIUS } from '../../constants/theme';
+
+const C = {
+  bg: '#f8faff',
+  card: '#ffffff',
+  primary: '#4A90D9',
+  text: '#1a1a2e',
+  sub: '#6b7280',
+  border: '#e5e7eb',
+  google: '#4285F4',
+};
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -14,13 +23,13 @@ export default function SignupScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleRoleModal, setGoogleRoleModal] = useState(false);
   const [googleRole, setGoogleRole] = useState('patient');
+  const [focused, setFocused] = useState('');
 
-  const redirect = (role) => {
-    if (role === 'caregiver') router.replace('/(caregiver)/dashboard');
+  const redirect = (r) => {
+    if (r === 'caregiver') router.replace('/(caregiver)/dashboard');
     else router.replace('/(patient)/dashboard');
   };
 
-  // Handle Google redirect result when page loads after redirect
   useEffect(() => {
     const checkRedirect = async () => {
       try {
@@ -31,11 +40,8 @@ export default function SignupScreen() {
           if (typeof localStorage !== 'undefined') localStorage.removeItem('googleRole');
           redirect(result.profile?.role || savedRole);
         }
-      } catch (e) {
-        // No redirect result, ignore
-      } finally {
-        setGoogleLoading(false);
-      }
+      } catch (e) {}
+      finally { setGoogleLoading(false); }
     };
     checkRedirect();
   }, []);
@@ -48,9 +54,7 @@ export default function SignupScreen() {
       redirect(role);
     } catch (e) {
       Alert.alert('Signup Failed', e.message);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const confirmGoogleSignup = async () => {
@@ -58,116 +62,170 @@ export default function SignupScreen() {
     try {
       if (typeof localStorage !== 'undefined') localStorage.setItem('googleRole', googleRole);
       await signInWithGoogle(googleRole);
-      // Page redirects to Google then comes back
-    } catch (e) {
-      Alert.alert('Google Signup Failed', e.message);
-    }
+    } catch (e) { Alert.alert('Google Signup Failed', e.message); }
   };
 
-  if (googleLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Setting up your account...</Text>
-      </View>
-    );
-  }
+  if (googleLoading) return (
+    <View style={s.page}>
+      <ActivityIndicator size="large" color={C.primary} />
+      <Text style={s.loadingText}>Setting up your account...</Text>
+    </View>
+  );
+
+  const ROLES = [
+    { key: 'patient', emoji: '🧓', label: 'Patient', desc: 'I need care support' },
+    { key: 'caregiver', emoji: '👨⚕️', label: 'Caregiver', desc: 'I support a patient' },
+  ];
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.emoji}>👤</Text>
-      <Text style={styles.title}>Create Account</Text>
+    <View style={s.page}>
+      {Platform.OS === 'web' && (
+        <View style={s.leftPanel}>
+          <Text style={s.brandEmoji}>🧠</Text>
+          <Text style={s.brandName}>Memory Care</Text>
+          <Text style={s.brandTagline}>Join thousands of patients and caregivers using Memory Care Assistant</Text>
+          <View style={s.featureList}>
+            {['✅ Free to use', '🔒 Secure & private', '📱 Works on all devices', '🔔 Smart notifications'].map(f => (
+              <View key={f} style={s.featureItem}>
+                <Text style={s.featureText}>{f}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
 
-      <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor={COLORS.subtext} value={name} onChangeText={setName} />
-      <TextInput style={styles.input} placeholder="Email Address" placeholderTextColor={COLORS.subtext} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-      <TextInput style={styles.input} placeholder="Password (min 6 chars)" placeholderTextColor={COLORS.subtext} value={password} onChangeText={setPassword} secureTextEntry />
+      <View style={s.cardWrap}>
+        <View style={s.card}>
+          {Platform.OS !== 'web' && <Text style={s.mobileEmoji}>🧠</Text>}
+          <Text style={s.title}>Create an account</Text>
+          <Text style={s.subtitle}>Start your Memory Care journey</Text>
 
-      <Text style={styles.label}>I am a:</Text>
-      <View style={styles.roleRow}>
-        {[{ key: 'patient', label: '🧓 Patient' }, { key: 'caregiver', label: '👨⚕️ Caregiver' }].map(r => (
-          <TouchableOpacity key={r.key} style={[styles.roleBtn, role === r.key && styles.roleBtnActive]} onPress={() => setRole(r.key)}>
-            <Text style={[styles.roleText, role === r.key && styles.roleTextActive]}>{r.label}</Text>
+          {/* Role selector */}
+          <View style={s.roleRow}>
+            {ROLES.map(r => (
+              <TouchableOpacity
+                key={r.key}
+                style={[s.roleCard, role === r.key && s.roleCardActive]}
+                onPress={() => setRole(r.key)}
+              >
+                <Text style={s.roleEmoji}>{r.emoji}</Text>
+                <Text style={[s.roleLabel, role === r.key && s.roleLabelActive]}>{r.label}</Text>
+                <Text style={s.roleDesc}>{r.desc}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={s.label}>Full Name</Text>
+          <TextInput style={[s.input, focused === 'name' && s.inputFocused]} placeholder="John Smith"
+            placeholderTextColor={C.sub} value={name} onChangeText={setName}
+            onFocus={() => setFocused('name')} onBlur={() => setFocused('')} />
+
+          <Text style={s.label}>Email</Text>
+          <TextInput style={[s.input, focused === 'email' && s.inputFocused]} placeholder="you@example.com"
+            placeholderTextColor={C.sub} value={email} onChangeText={setEmail}
+            keyboardType="email-address" autoCapitalize="none"
+            onFocus={() => setFocused('email')} onBlur={() => setFocused('')} />
+
+          <Text style={s.label}>Password</Text>
+          <TextInput style={[s.input, focused === 'password' && s.inputFocused]} placeholder="Min 6 characters"
+            placeholderTextColor={C.sub} value={password} onChangeText={setPassword} secureTextEntry
+            onFocus={() => setFocused('password')} onBlur={() => setFocused('')} />
+
+          <TouchableOpacity style={s.btn} onPress={handleSignup} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnText}>Create Account</Text>}
           </TouchableOpacity>
-        ))}
+
+          <View style={s.divider}>
+            <View style={s.divLine} />
+            <Text style={s.divText}>or sign up with</Text>
+            <View style={s.divLine} />
+          </View>
+
+          <TouchableOpacity style={s.googleBtn} onPress={() => setGoogleRoleModal(true)}>
+            <Text style={s.googleG}>G</Text>
+            <Text style={s.googleText}>Google</Text>
+          </TouchableOpacity>
+
+          <Text style={s.switchText}>
+            Already have an account?{' '}
+            <Text style={s.switchLink} onPress={() => router.back()}>Sign in</Text>
+          </Text>
+        </View>
       </View>
 
-      <TouchableOpacity style={styles.btn} onPress={handleSignup} disabled={loading}>
-        {loading ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.btnText}>Sign Up</Text>}
-      </TouchableOpacity>
-
-      <View style={styles.dividerRow}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>OR</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <TouchableOpacity style={styles.googleBtn} onPress={() => setGoogleRoleModal(true)}>
-        <Text style={styles.googleIcon}>G</Text>
-        <Text style={styles.googleText}>Sign up with Google</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => router.back()} style={{ marginTop: SPACING.md }}>
-        <Text style={styles.link}>Already have an account? <Text style={styles.linkBold}>Login</Text></Text>
-      </TouchableOpacity>
-
-      {/* Google Role Selection Modal */}
-      <Modal visible={googleRoleModal} transparent animationType="slide">
-        <View style={styles.overlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Select Your Role</Text>
-            <Text style={styles.modalSubtitle}>How will you use Memory Care?</Text>
-            <View style={styles.roleRow}>
-              {[{ key: 'patient', label: '🧓 Patient' }, { key: 'caregiver', label: '👨⚕️ Caregiver' }].map(r => (
-                <TouchableOpacity key={r.key} style={[styles.roleBtn, googleRole === r.key && styles.roleBtnActive]} onPress={() => setGoogleRole(r.key)}>
-                  <Text style={[styles.roleText, googleRole === r.key && styles.roleTextActive]}>{r.label}</Text>
+      {/* Google Role Modal */}
+      <Modal visible={googleRoleModal} transparent animationType="fade">
+        <View style={s.overlay}>
+          <View style={s.modal}>
+            <Text style={s.modalTitle}>Choose your role</Text>
+            <Text style={s.modalSub}>How will you use Memory Care?</Text>
+            <View style={s.roleRow}>
+              {ROLES.map(r => (
+                <TouchableOpacity key={r.key} style={[s.roleCard, googleRole === r.key && s.roleCardActive]} onPress={() => setGoogleRole(r.key)}>
+                  <Text style={s.roleEmoji}>{r.emoji}</Text>
+                  <Text style={[s.roleLabel, googleRole === r.key && s.roleLabelActive]}>{r.label}</Text>
+                  <Text style={s.roleDesc}>{r.desc}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setGoogleRoleModal(false)}>
-                <Text style={styles.cancelText}>Cancel</Text>
+            <View style={s.modalBtns}>
+              <TouchableOpacity style={s.cancelBtn} onPress={() => setGoogleRoleModal(false)}>
+                <Text style={s.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmBtn} onPress={confirmGoogleSignup}>
-                <Text style={styles.confirmText}>Continue with Google</Text>
+              <TouchableOpacity style={s.confirmBtn} onPress={confirmGoogleSignup}>
+                <Text style={s.googleG}>G</Text>
+                <Text style={s.confirmText}>Continue</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', padding: SPACING.lg },
-  loadingContainer: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', gap: SPACING.md },
-  loadingText: { fontSize: FONTS.medium, color: COLORS.subtext },
-  emoji: { fontSize: 64, marginBottom: SPACING.sm },
-  title: { fontSize: FONTS.xlarge, fontWeight: 'bold', color: COLORS.text, marginBottom: SPACING.xl },
-  input: { width: '100%', backgroundColor: COLORS.card, borderRadius: RADIUS.md, padding: SPACING.md, fontSize: FONTS.medium, color: COLORS.text, marginBottom: SPACING.md, borderWidth: 1, borderColor: COLORS.border },
-  label: { fontSize: FONTS.medium, color: COLORS.text, alignSelf: 'flex-start', marginBottom: SPACING.sm },
-  roleRow: { flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.lg, width: '100%' },
-  roleBtn: { flex: 1, padding: SPACING.md, borderRadius: RADIUS.md, borderWidth: 2, borderColor: COLORS.border, alignItems: 'center', backgroundColor: COLORS.card },
-  roleBtnActive: { borderColor: COLORS.primary, backgroundColor: '#EAF2FF' },
-  roleText: { fontSize: FONTS.medium, color: COLORS.subtext },
-  roleTextActive: { color: COLORS.primary, fontWeight: 'bold' },
-  btn: { width: '100%', backgroundColor: COLORS.primary, borderRadius: RADIUS.md, padding: SPACING.md, alignItems: 'center', marginBottom: SPACING.lg },
-  btnText: { fontSize: FONTS.large, fontWeight: 'bold', color: COLORS.white },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: SPACING.lg },
-  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.border },
-  dividerText: { marginHorizontal: SPACING.sm, fontSize: FONTS.small, color: COLORS.subtext, fontWeight: '600' },
-  googleBtn: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.card, borderRadius: RADIUS.md, padding: SPACING.md, borderWidth: 1.5, borderColor: COLORS.border, gap: SPACING.sm, elevation: 2 },
-  googleIcon: { fontSize: FONTS.large, fontWeight: 'bold', color: '#4285F4' },
-  googleText: { fontSize: FONTS.medium, fontWeight: '600', color: COLORS.text },
-  link: { fontSize: FONTS.small, color: COLORS.subtext },
-  linkBold: { color: COLORS.primary, fontWeight: 'bold' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: COLORS.card, borderTopLeftRadius: RADIUS.lg, borderTopRightRadius: RADIUS.lg, padding: SPACING.lg },
-  modalTitle: { fontSize: FONTS.xlarge, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },
-  modalSubtitle: { fontSize: FONTS.medium, color: COLORS.subtext, marginBottom: SPACING.lg },
-  modalActions: { flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.sm },
-  cancelBtn: { flex: 1, padding: SPACING.md, borderRadius: RADIUS.md, borderWidth: 2, borderColor: COLORS.border, alignItems: 'center' },
-  cancelText: { fontSize: FONTS.medium, color: COLORS.subtext },
-  confirmBtn: { flex: 2, padding: SPACING.md, borderRadius: RADIUS.md, backgroundColor: COLORS.primary, alignItems: 'center' },
-  confirmText: { fontSize: FONTS.medium, fontWeight: 'bold', color: COLORS.white },
+const s = StyleSheet.create({
+  page: { flex: 1, flexDirection: 'row', backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
+  loadingText: { marginTop: 12, fontSize: 14, color: C.sub },
+  leftPanel: { flex: 1, backgroundColor: C.primary, height: '100%', padding: 48, justifyContent: 'center' },
+  brandEmoji: { fontSize: 52, marginBottom: 12 },
+  brandName: { fontSize: 32, fontWeight: '800', color: '#fff', marginBottom: 8 },
+  brandTagline: { fontSize: 15, color: 'rgba(255,255,255,0.8)', lineHeight: 22, marginBottom: 36, maxWidth: 280 },
+  featureList: { gap: 12 },
+  featureItem: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16 },
+  featureText: { color: '#fff', fontSize: 14, fontWeight: '500' },
+  cardWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  card: { backgroundColor: C.card, borderRadius: 16, padding: 28, width: '100%', maxWidth: 420, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 24, elevation: 4 },
+  mobileEmoji: { fontSize: 40, textAlign: 'center', marginBottom: 8 },
+  title: { fontSize: 22, fontWeight: '700', color: C.text, marginBottom: 4 },
+  subtitle: { fontSize: 13, color: C.sub, marginBottom: 20 },
+  roleRow: { flexDirection: 'row', gap: 10, marginBottom: 18 },
+  roleCard: { flex: 1, borderRadius: 10, borderWidth: 1.5, borderColor: C.border, padding: 12, alignItems: 'center', backgroundColor: C.bg },
+  roleCardActive: { borderColor: C.primary, backgroundColor: '#EAF2FF' },
+  roleEmoji: { fontSize: 22, marginBottom: 4 },
+  roleLabel: { fontSize: 13, fontWeight: '700', color: C.sub },
+  roleLabelActive: { color: C.primary },
+  roleDesc: { fontSize: 11, color: C.sub, textAlign: 'center', marginTop: 2 },
+  label: { fontSize: 13, fontWeight: '600', color: C.text, marginBottom: 6 },
+  input: { backgroundColor: C.bg, borderRadius: 10, borderWidth: 1.5, borderColor: C.border, padding: 11, fontSize: 14, color: C.text, marginBottom: 14 },
+  inputFocused: { borderColor: C.primary },
+  btn: { backgroundColor: C.primary, borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 4, marginBottom: 18 },
+  btnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  divider: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  divLine: { flex: 1, height: 1, backgroundColor: C.border },
+  divText: { marginHorizontal: 10, fontSize: 12, color: C.sub },
+  googleBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 10, borderWidth: 1.5, borderColor: C.border, padding: 11, marginBottom: 20, gap: 8, backgroundColor: C.card },
+  googleG: { fontSize: 15, fontWeight: '800', color: C.google },
+  googleText: { fontSize: 14, fontWeight: '600', color: C.text },
+  switchText: { fontSize: 13, color: C.sub, textAlign: 'center' },
+  switchLink: { color: C.primary, fontWeight: '600' },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
+  modal: { backgroundColor: C.card, borderRadius: 16, padding: 28, width: '90%', maxWidth: 380 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: C.text, marginBottom: 4 },
+  modalSub: { fontSize: 13, color: C.sub, marginBottom: 20 },
+  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  cancelBtn: { flex: 1, padding: 11, borderRadius: 10, borderWidth: 1.5, borderColor: C.border, alignItems: 'center' },
+  cancelText: { fontSize: 14, color: C.sub, fontWeight: '600' },
+  confirmBtn: { flex: 2, flexDirection: 'row', padding: 11, borderRadius: 10, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', gap: 6 },
+  confirmText: { fontSize: 14, fontWeight: '700', color: '#fff' },
 });
