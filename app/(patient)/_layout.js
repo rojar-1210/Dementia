@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Tabs, Slot, useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../hooks/useTheme';
+import { COLORS } from '../../constants/theme';
 
 const NAV = [
   { name: 'dashboard', label: 'Home', icon: 'home' },
@@ -12,40 +12,55 @@ const NAV = [
 ];
 
 export default function PatientLayout() {
-  const { colors } = useTheme();
-  const C = colors;
   const router = useRouter();
   const segments = useSegments();
   const current = segments[segments.length - 1];
 
   if (Platform.OS !== 'web') {
-    const { Tabs } = require('expo-router');
-    const { COLORS } = require('../../constants/theme');
     return (
       <Tabs screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.subtext,
-        tabBarStyle: { height: 70, paddingBottom: 10, paddingTop: 6, backgroundColor: C.card, borderTopColor: C.border },
+        tabBarStyle: { height: 70, paddingBottom: 10, paddingTop: 6, backgroundColor: COLORS.card, borderTopColor: COLORS.border },
         tabBarLabelStyle: { fontSize: 13, fontWeight: '600' },
       }}>
         {NAV.map(n => (
-          <Tabs.Screen key={n.name} name={n.name} options={{ title: n.label, tabBarIcon: ({ color }) => <Ionicons name={n.icon} size={28} color={color} />, tabBarActiveTintColor: n.name === 'emergency' ? COLORS.danger : COLORS.primary }} />
+          <Tabs.Screen
+            key={n.name}
+            name={n.name}
+            options={{
+              title: n.label,
+              tabBarIcon: ({ color }) => <Ionicons name={n.icon} size={28} color={color} />,
+              tabBarActiveTintColor: n.name === 'emergency' ? COLORS.danger : COLORS.primary,
+            }}
+          />
         ))}
       </Tabs>
     );
   }
 
+  // Web: sidebar layout
   return (
-    <View style={[styles.container, { backgroundColor: C.background }]}>
-      <View style={[styles.sidebar, { backgroundColor: C.card, borderRightColor: C.border }]}>
-        <Text style={[styles.brand, { color: C.primary }]}>🧠 Memory Care</Text>
+    <View style={styles.container}>
+      <View style={styles.sidebar}>
+        <Text style={styles.brand}>🧠 Memory Care</Text>
         {NAV.map(n => {
           const active = current === n.name;
+          const isEmergency = n.name === 'emergency';
+          const color = isEmergency
+            ? (active ? COLORS.danger : COLORS.subtext)
+            : (active ? COLORS.primary : COLORS.subtext);
           return (
-            <TouchableOpacity key={n.name} style={[styles.navItem, active && { backgroundColor: C.primary + '22' }]} onPress={() => router.replace(`/(patient)/${n.name}`)}>
-              <Ionicons name={n.icon} size={22} color={n.name === 'emergency' ? (active ? '#E74C3C' : C.subtext) : (active ? C.primary : C.subtext)} />
-              <Text style={[styles.navLabel, { color: n.name === 'emergency' ? (active ? '#E74C3C' : C.subtext) : (active ? C.primary : C.subtext), fontWeight: active ? '700' : '500' }]}>{n.label}</Text>
+            <TouchableOpacity
+              key={n.name}
+              style={[styles.navItem, active && styles.navItemActive]}
+              onPress={() => router.replace(`/(patient)/${n.name}`)}
+            >
+              <Ionicons name={n.icon} size={22} color={color} />
+              <Text style={[styles.navLabel, { color, fontWeight: active ? '700' : '500' }]}>
+                {n.label}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -58,10 +73,17 @@ export default function PatientLayout() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row' },
-  sidebar: { width: 220, paddingTop: 40, paddingHorizontal: 16, borderRightWidth: 1 },
-  brand: { fontSize: 18, fontWeight: '800', marginBottom: 32, paddingHorizontal: 8 },
-  navItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 10, marginBottom: 4 },
+  container: { flex: 1, flexDirection: 'row', backgroundColor: COLORS.background },
+  sidebar: {
+    width: 220, paddingTop: 40, paddingHorizontal: 16,
+    backgroundColor: COLORS.card, borderRightWidth: 1, borderRightColor: COLORS.border,
+  },
+  brand: { fontSize: 18, fontWeight: '800', color: COLORS.primary, marginBottom: 32, paddingHorizontal: 8 },
+  navItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 12, paddingHorizontal: 12, borderRadius: 10, marginBottom: 4,
+  },
+  navItemActive: { backgroundColor: COLORS.primary + '18' },
   navLabel: { fontSize: 15 },
   content: { flex: 1 },
 });
