@@ -39,13 +39,6 @@ export default function LoginScreen() {
     }
   };
 
-  if (googleLoading) return (
-    <View style={s.page}>
-      <ActivityIndicator size="large" color={C.primary} />
-      <Text style={s.loadingText}>Signing in...</Text>
-    </View>
-  );
-
   return (
     <View style={s.page}>
       <View style={s.card}>
