@@ -16,7 +16,8 @@
       [
         "expo-notifications",
         {
-          "color": "#4A90D9"
+          "color": "#4A90D9",
+          "sounds": []
         }
       ],
       [
@@ -30,9 +31,14 @@
     "android": {
       "permissions": [
         "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
         "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "VIBRATE",
+        "CALL_PHONE",
+        "POST_NOTIFICATIONS",
+        "SCHEDULE_EXACT_ALARM",
+        "USE_EXACT_ALARM"
       ],
       "package": "com.memorycare.assistant"
     },
@@ -41,7 +47,8 @@
       "bundleIdentifier": "com.memorycare.assistant",
       "infoPlist": {
         "NSLocationAlwaysUsageDescription": "Used for patient safety tracking.",
-        "NSLocationWhenInUseUsageDescription": "Used for patient safety tracking."
+        "NSLocationWhenInUseUsageDescription": "Used for patient safety tracking.",
+        "NSUserNotificationUsageDescription": "Used to send medication and appointment reminders."
       }
     },
     "extra": {

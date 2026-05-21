@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "plugins": [
+      "expo-task-manager",
+      [
+        "expo-background-fetch",
+        {
+          "android": {
+            "minimumInterval": 15
+          }
+        }
+      ]
+    ]
+  }
+}

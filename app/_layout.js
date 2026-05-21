@@ -12,12 +12,18 @@ function RootNavigator() {
   useEffect(() => {
     if (loading) return;
     const inAuth = segments[0] === '(auth)';
+    const inRole = segments[0] === 'role-select';
+
     if (!user && !inAuth) {
       router.replace('/(auth)/login');
-    } else if (user && inAuth) {
-      router.replace('/(tabs)/dashboard');
+    } else if (user && !profile && !inRole && !inAuth) {
+      router.replace('/role-select');
+    } else if (user && profile?.role === 'patient' && !segments[0]?.includes('patient') && !inAuth) {
+      router.replace('/(patient)/dashboard');
+    } else if (user && profile?.role === 'caregiver' && !segments[0]?.includes('caregiver') && !inAuth) {
+      router.replace('/(caregiver)/dashboard');
     }
-  }, [user, loading]);
+  }, [user, profile, loading]);
 
   if (loading) {
     return (
@@ -29,9 +35,11 @@ function RootNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
       <Stack.Screen name="index" />
+      <Stack.Screen name="role-select" />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(patient)" />
+      <Stack.Screen name="(caregiver)" />
     </Stack>
   );
 }

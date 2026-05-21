@@ -1,5 +1,4 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -25,6 +24,8 @@ export const cancelNotification = (id) => Notifications.cancelScheduledNotificat
 
 export const sendImmediateAlert = (title, body) =>
   Notifications.scheduleNotificationAsync({
-    content: { title, body, sound: true, priority: Notifications.AndroidNotificationPriority.MAX },
+    content: { title, body, sound: true },
     trigger: null,
   });
+
+export const initializeNotifications = () => requestPermissions();

@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthChange, getUserProfile } from '../services/authService';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../config/firebase';
+import { getUserProfile } from '../services/authService';
 
 const AuthContext = createContext(null);
 
@@ -9,10 +11,10 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthChange(async (firebaseUser) => {
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const p = await getUserProfile(firebaseUser.uid);
         setUser(firebaseUser);
+        const p = await getUserProfile(firebaseUser.uid);
         setProfile(p);
       } else {
         setUser(null);
@@ -23,8 +25,15 @@ export const AuthProvider = ({ children }) => {
     return unsub;
   }, []);
 
+  const refreshProfile = async () => {
+    if (user) {
+      const p = await getUserProfile(user.uid);
+      setProfile(p);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading }}>
+    <AuthContext.Provider value={{ user, profile, loading, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
