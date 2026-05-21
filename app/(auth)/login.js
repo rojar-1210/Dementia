@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { signIn } from '../../services/authService';
-import { getUserProfile } from '../../services/authService';
+import { signIn, signInWithGoogle, getUserProfile } from '../../services/authService';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants/theme';
 
 export default function LoginScreen() {
@@ -10,6 +9,12 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const redirect = (profile) => {
+    if (profile?.role === 'caregiver') router.replace('/(caregiver)/dashboard');
+    else router.replace('/(patient)/dashboard');
+  };
 
   const handleLogin = async () => {
     if (!email || !password) return Alert.alert('Error', 'Please fill all fields');
@@ -17,15 +22,23 @@ export default function LoginScreen() {
     try {
       const user = await signIn(email, password);
       const profile = await getUserProfile(user.uid);
-      if (profile?.role === 'caregiver') {
-        router.replace('/(caregiver)/dashboard');
-      } else {
-        router.replace('/(patient)/dashboard');
-      }
+      redirect(profile);
     } catch (e) {
       Alert.alert('Login Failed', e.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    try {
+      const { profile } = await signInWithGoogle();
+      redirect(profile);
+    } catch (e) {
+      Alert.alert('Google Login Failed', e.message);
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -44,7 +57,25 @@ export default function LoginScreen() {
         {loading ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.btnText}>Login</Text>}
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
+      {/* Divider */}
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>OR</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      {/* Google Button */}
+      <TouchableOpacity style={styles.googleBtn} onPress={handleGoogle} disabled={googleLoading}>
+        {googleLoading
+          ? <ActivityIndicator color={COLORS.text} />
+          : <>
+              <Text style={styles.googleIcon}>G</Text>
+              <Text style={styles.googleText}>Continue with Google</Text>
+            </>
+        }
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => router.push('/(auth)/signup')} style={{ marginTop: SPACING.md }}>
         <Text style={styles.link}>Don't have an account? <Text style={styles.linkBold}>Sign Up</Text></Text>
       </TouchableOpacity>
     </ScrollView>
@@ -59,6 +90,12 @@ const styles = StyleSheet.create({
   input: { width: '100%', backgroundColor: COLORS.card, borderRadius: RADIUS.md, padding: SPACING.md, fontSize: FONTS.medium, color: COLORS.text, marginBottom: SPACING.md, borderWidth: 1, borderColor: COLORS.border },
   btn: { width: '100%', backgroundColor: COLORS.primary, borderRadius: RADIUS.md, padding: SPACING.md, alignItems: 'center', marginTop: SPACING.sm, marginBottom: SPACING.lg },
   btnText: { fontSize: FONTS.large, fontWeight: 'bold', color: COLORS.white },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: SPACING.lg },
+  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.border },
+  dividerText: { marginHorizontal: SPACING.sm, fontSize: FONTS.small, color: COLORS.subtext, fontWeight: '600' },
+  googleBtn: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.card, borderRadius: RADIUS.md, padding: SPACING.md, borderWidth: 1.5, borderColor: COLORS.border, gap: SPACING.sm, elevation: 2 },
+  googleIcon: { fontSize: FONTS.large, fontWeight: 'bold', color: '#4285F4' },
+  googleText: { fontSize: FONTS.medium, fontWeight: '600', color: COLORS.text },
   link: { fontSize: FONTS.small, color: COLORS.subtext },
   linkBold: { color: COLORS.primary, fontWeight: 'bold' },
 });
